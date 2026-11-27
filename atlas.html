@@ -104,7 +104,7 @@ footer a { color: var(--accent); }
   </header>
 
   <nav class="plates" aria-label="Planches">
-    <a href="https://claude.ai/artifact/BFxYbE4dhmAvjLoLCYMjPC" target="_blank" rel="noopener"><span class="n">PLANCHE 1 ↗</span><span class="t">Le carré d'Ising</span></a>
+    <a class="ising-link" href="https://claude.ai/artifact/BFxYbE4dhmAvjLoLCYMjPC" target="_blank" rel="noopener"><span class="n">PLANCHE 1 ↗</span><span class="t">Le carré d'Ising</span></a>
     <a href="#tore" data-plate="tore"><span class="n">PLANCHE 2</span><span class="t">L'horloge et le tore</span></a>
     <a href="#pendule" data-plate="pendule"><span class="n">PLANCHE 3</span><span class="t">Le pendule</span></a>
     <a href="#lampes" data-plate="lampes"><span class="n">PLANCHE 4</span><span class="t">Trois lampes</span></a>
@@ -381,7 +381,7 @@ footer a { color: var(--accent); }
     </div>
   </section>
 
-  <footer>Planche 1 dans une page à part : <a href="https://claude.ai/artifact/BFxYbE4dhmAvjLoLCYMjPC" target="_blank" rel="noopener">Le carré d'Ising</a>. Les planches suivent l'ordre de la discussion « Espaces, états et émergence ».</footer>
+  <footer>Planche 1 dans une page à part : <a class="ising-link" href="https://claude.ai/artifact/BFxYbE4dhmAvjLoLCYMjPC" target="_blank" rel="noopener">Le carré d'Ising</a>. Les planches suivent l'ordre de la discussion « Espaces, états et émergence ».</footer>
 </div>
 
 <script>
@@ -1035,6 +1035,11 @@ const CO = {
     }
   },
 };
+
+// Hors de claude.ai (GitHub Pages ou fichier local), la planche 1 est le fichier voisin.
+if (location.protocol === "file:" || location.hostname.endsWith("github.io")) {
+  document.querySelectorAll(".ising-link").forEach((a) => { a.href = "carre-ising.html"; a.removeAttribute("target"); });
+}
 
 // ================= Routage & boucle =================
 const PLATES = { tore: TO, pendule: PE, lampes: LA, bits: BI, droites: DR, simplexe: SI, concepts: CO };
