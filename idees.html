@@ -1,0 +1,571 @@
+<meta charset="utf-8">
+<title>Atlas des idées puissantes</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout : cahier 3 de l'Atlas, même papier à points. Bandeau de six idées, une planche à la fois : expérience à gauche, réglages et chiffres à droite, « À observer » en dessous. */
+:root {
+  --paper: #f6f7f3;
+  --panel: #ffffff;
+  --ink: #1c2332;
+  --ink-soft: #5d6677;
+  --rule: #dfe3ea;
+  --accent: #1f5fbf;
+  --warm: #c24a1c;
+  --hl: #f3d35b;
+  --f-hand: "Kalam", "Segoe Print", cursive;
+  --f-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #131720; --panel: #1a1f2a; --ink: #e6e8ee; --ink-soft: #98a1b3; --rule: #2a313e;
+    --accent: #82b2ff; --warm: #f08a5d; --hl: #c9a233; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #131720; --panel: #1a1f2a; --ink: #e6e8ee; --ink-soft: #98a1b3; --rule: #2a313e;
+  --accent: #82b2ff; --warm: #f08a5d; --hl: #c9a233; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--paper); color: var(--ink); font-family: var(--f-ui); font-size: 15px; line-height: 1.5;
+  background-image: radial-gradient(var(--rule) 1.2px, transparent 1.2px); background-size: 24px 24px;
+}
+.wrap {
+  max-width: 1240px; margin: 0 auto; padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 22px;
+}
+header { display: flex; flex-direction: column; gap: 4px; max-width: 74ch; }
+.eyebrow { font: 500 .78rem var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); }
+.eyebrow a { color: var(--accent); }
+h1 { font: 700 clamp(2rem, 5vw, 3rem)/1.05 var(--f-hand); margin: 0; text-wrap: balance; }
+h2 { font: 700 1.6rem/1.15 var(--f-hand); margin: 0; text-wrap: balance; }
+h3 { font: 700 1.15rem/1.2 var(--f-hand); margin: 0; }
+.lede { margin: 4px 0 0; color: var(--ink-soft); }
+nav.plates { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+nav.plates a {
+  display: flex; flex-direction: column; gap: 2px; text-decoration: none; color: var(--ink);
+  background: var(--panel); border: 1.5px solid var(--ink); border-radius: 3px; padding: 8px 10px;
+}
+nav.plates a .n { font: 500 .72rem var(--f-mono); color: var(--ink-soft); letter-spacing: .05em; }
+nav.plates a .t { font: 700 1.02rem/1.15 var(--f-hand); }
+nav.plates a[aria-current="page"] { background: var(--ink); color: var(--panel); }
+nav.plates a[aria-current="page"] .n { color: var(--panel); opacity: .75; }
+nav.plates a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.plate { display: flex; flex-direction: column; gap: 16px; }
+.plate-head { display: flex; flex-direction: column; gap: 4px; max-width: 80ch; }
+.plate-head p { margin: 0; color: var(--ink-soft); }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+@media (max-width: 900px) { .two { grid-template-columns: minmax(0, 1fr); } }
+.sheet {
+  background: var(--panel); border: 1.5px solid var(--ink); border-radius: 3px; box-shadow: 4px 4px 0 var(--rule);
+  padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0;
+}
+.sheet p { margin: 0; font-size: .9rem; }
+.note { color: var(--ink-soft); font-size: .86rem; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.between { justify-content: space-between; }
+canvas { display: block; width: 100%; max-width: 100%; touch-action: none; }
+canvas.drag { cursor: crosshair; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
+.stat { border-top: 1.5px dashed var(--rule); padding-top: 6px; display: flex; flex-direction: column; min-width: 0; }
+.stat .k { font-size: .74rem; color: var(--ink-soft); }
+.stat .v { font: 500 1rem var(--f-mono); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.btn {
+  font: 500 .84rem var(--f-ui); color: var(--ink); background: var(--panel);
+  border: 1.5px solid var(--ink); border-radius: 5px; padding: 5px 11px; cursor: pointer;
+}
+.btn[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
+.btn:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+input[type=range] { accent-color: var(--accent); flex: 1; min-width: 110px; }
+label.ctl { display: inline-flex; gap: 8px; align-items: center; font-size: .86rem; flex-wrap: wrap; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.think { border-left: 3px solid var(--hl); padding-left: 12px; display: flex; flex-direction: column; gap: 6px; }
+.think p { font-size: .9rem; }
+.hbars { display: flex; flex-direction: column; gap: 6px; }
+.hbar { display: grid; grid-template-columns: minmax(0, 11rem) minmax(0, 1fr) 4.2rem; gap: 8px; align-items: center; font-size: .82rem; }
+.hbar .tr { height: 16px; border: 1px solid var(--rule); border-radius: 2px; position: relative; }
+.hbar .fi { position: absolute; inset: 0 auto 0 0; background: var(--hl); }
+.hbar.best .fi { background: var(--warm); opacity: .8; }
+.hbar .val { font-family: var(--f-mono); text-align: right; font-variant-numeric: tabular-nums; }
+.sw { display: inline-block; width: 18px; height: 3px; vertical-align: middle; margin-right: 6px; }
+table { border-collapse: collapse; width: 100%; font-size: .84rem; }
+th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--rule); font-variant-numeric: tabular-nums; }
+th { font-weight: 600; color: var(--ink-soft); font-size: .76rem; }
+td.mono { font-family: var(--f-mono); }
+.tblwrap { overflow-x: auto; }
+footer { color: var(--ink-soft); font-size: .84rem; }
+footer a { color: var(--accent); }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow"><a class="atlas-link" href="https://claude.ai/artifact/MJNToqwPhwgnPb4pM8PDce" target="_blank" rel="noopener">Atlas des espaces d'états</a> · cahier 3</div>
+    <h1>Les idées puissantes</h1>
+    <p class="lede">Six concepts qui changent la façon de penser une fois qu'on les a manipulés. Chaque planche est une petite expérience faite pour déclencher le déclic.</p>
+  </header>
+
+  <nav class="plates" aria-label="Idées">
+    <a href="#bayes" data-plate="bayes"><span class="n">Idée 1</span><span class="t">Le taux de base</span></a>
+    <a href="#selection" data-plate="selection"><span class="n">Idée 2</span><span class="t">La sélection cumulative</span></a>
+    <a href="#chaos" data-plate="chaos"><span class="n">Idée 3</span><span class="t">Déterminé mais imprévisible</span></a>
+    <a href="#prisonnier" data-plate="prisonnier"><span class="n">Idée 4</span><span class="t">Le dilemme du prisonnier</span></a>
+    <a href="#puissance" data-plate="puissance"><span class="n">Idée 5</span><span class="t">Médiocristan et Extrémistan</span></a>
+    <a href="#regression" data-plate="regression"><span class="n">Idée 6</span><span class="t">La régression vers la moyenne</span></a>
+  </nav>
+
+  <section class="plate" id="p-bayes" hidden>
+    <div class="plate-head">
+      <h2>Idée 1 · Le taux de base (Bayes)</h2>
+      <p>Mille personnes passent un test. Il est fiable, mais la maladie est rare. Parmi les positifs, combien sont vraiment malades ?</p>
+    </div>
+    <div class="two">
+      <div class="sheet">
+        <canvas id="ba-cv" style="height:360px" aria-label="Mille personnes, colorées selon leur état et leur résultat"></canvas>
+        <p class="note"><span style="color:var(--warm)">●</span> malade, testé positif · <span style="color:var(--warm)">○</span> malade raté · <span style="color:var(--accent)">●</span> sain mais positif · <span style="color:var(--ink-soft)">·</span> sain, négatif</p>
+      </div>
+      <div class="sheet">
+        <label class="ctl">Prévalence <input id="ba-prev" type="range" min="1" max="200" value="10"><span id="ba-prev-v" class="mono"></span></label>
+        <label class="ctl">Sensibilité <input id="ba-sens" type="range" min="50" max="100" step="0.5" value="99"><span id="ba-sens-v" class="mono"></span></label>
+        <label class="ctl">Spécificité <input id="ba-spec" type="range" min="50" max="100" step="0.5" value="95"><span id="ba-spec-v" class="mono"></span></label>
+        <div class="stats">
+          <div class="stat"><span class="k">Vrais positifs (sur 1000)</span><span class="v" id="ba-tp"></span></div>
+          <div class="stat"><span class="k">Faux positifs (sur 1000)</span><span class="v" id="ba-fp"></span></div>
+          <div class="stat"><span class="k">P(malade | positif)</span><span class="v" id="ba-post"></span></div>
+          <div class="stat"><span class="k">Après un 2ᵉ test positif</span><span class="v" id="ba-post2"></span></div>
+        </div>
+        <p class="mono" style="font-size:.85rem">P(M | +) = P(+ | M)·P(M) / [P(+ | M)·P(M) + P(+ | S)·P(S)]</p>
+      </div>
+    </div>
+    <div class="think">
+      <h3>À observer</h3>
+      <p>Avec 1 % de malades et un test à 99 % / 95 %, un positif n'a qu'environ 17 % de chances d'être malade. Les faux positifs viennent de la foule immense des sains : 5 % de 990, c'est plus que 99 % de 10.</p>
+      <p>Le déclic : une preuve ne s'évalue jamais seule, elle déplace une croyance qui avait déjà un point de départ. La croyance est un point du segment [0, 1], et chaque indice la fait glisser. Le second test part de 17 %, pas de 1 %.</p>
+    </div>
+  </section>
+
+  <section class="plate" id="p-selection" hidden>
+    <div class="plate-head">
+      <h2>Idée 2 · La sélection cumulative</h2>
+      <p>Une phrase de 21 caractères parmi 27 symboles : il y en a 27²¹ ≈ 10³⁰. Le pur hasard ne la trouvera jamais. Le hasard <em>plus un tri qui garde ce qui marche</em> la trouve en quelques dizaines de générations.</p>
+    </div>
+    <div class="two">
+      <div class="sheet">
+        <canvas id="se-cv" style="height:300px" aria-label="Lettres correctes en fonction des générations"></canvas>
+        <p class="note"><span class="sw" style="background:var(--accent)"></span>sélection cumulative · <span class="sw" style="background:var(--warm)"></span>meilleur tirage au pur hasard (100 essais par génération)</p>
+      </div>
+      <div class="sheet">
+        <div class="row">
+          <button class="btn" id="se-run" type="button">Lancer</button>
+          <button class="btn" id="se-reset" type="button">Recommencer</button>
+        </div>
+        <label class="ctl">Taux de mutation <input id="se-mu" type="range" min="1" max="20" value="4"><span id="se-mu-v" class="mono">4 %</span></label>
+        <p class="note">Cible</p>
+        <p class="mono">JE PENSE DONC JE SUIS</p>
+        <p class="note">Sélection cumulative : 100 copies mutées par génération, on garde la meilleure</p>
+        <p class="mono" id="se-cum"></p>
+        <p class="note">Pur hasard : meilleur tirage depuis le début</p>
+        <p class="mono" id="se-rnd"></p>
+        <div class="stats">
+          <div class="stat"><span class="k">Génération</span><span class="v" id="se-g"></span></div>
+          <div class="stat"><span class="k">Lettres justes (sélection)</span><span class="v" id="se-sc"></span></div>
+          <div class="stat"><span class="k">Lettres justes (hasard)</span><span class="v" id="se-sr"></span></div>
+        </div>
+      </div>
+    </div>
+    <div class="think">
+      <h3>À observer</h3>
+      <p>Les deux colonnes utilisent exactement le même hasard. La seule différence est la mémoire : la sélection conserve chaque petit progrès, et les progrès s'additionnent.</p>
+      <p>Le déclic : variation, hérédité et tri suffisent à produire du « design » sans designer. C'est un algorithme, indépendant du support. Il fonctionne pour les gènes, les idées, les entreprises ou les poids d'un réseau de neurones. Dans l'espace des 10³⁰ phrases, la sélection est une marche qui monte toujours la pente.</p>
+      <p class="note">Limite de la maquette : ici la cible est fixée d'avance, ce qui n'est pas le cas dans la nature, où le tri est seulement « survivre et se reproduire ».</p>
+    </div>
+  </section>
+
+  <section class="plate" id="p-chaos" hidden>
+    <div class="plate-head">
+      <h2>Idée 3 · Déterminé mais imprévisible</h2>
+      <p>La règle x ↦ r·x·(1 − x) est exacte et sans hasard. On la lance depuis 0,3 et depuis 0,3 + ε, avec ε minuscule.</p>
+    </div>
+    <div class="two">
+      <div class="sheet">
+        <canvas id="ch-cv1" style="height:220px" aria-label="Deux trajectoires de la suite logistique"></canvas>
+        <canvas id="ch-cv2" style="height:180px" aria-label="Écart entre les deux trajectoires, en échelle logarithmique"></canvas>
+      </div>
+      <div class="sheet">
+        <label class="ctl">r <input id="ch-r" type="range" min="2.8" max="4" step="0.001" value="3.9"><span id="ch-r-v" class="mono"></span></label>
+        <label class="ctl">Écart initial ε <input id="ch-e" type="range" min="-12" max="-2" step="1" value="-10"><span id="ch-e-v" class="mono"></span></label>
+        <div class="stats">
+          <div class="stat"><span class="k">Horizon (écart &gt; 0,1)</span><span class="v" id="ch-h"></span></div>
+          <div class="stat"><span class="k">Avec ε divisé par 1000</span><span class="v" id="ch-h2"></span></div>
+          <div class="stat"><span class="k">Gain par décimale de précision</span><span class="v" id="ch-gain"></span></div>
+        </div>
+        <p class="note">Essaie r = 3,2 (cycle de 2), r = 3,5 (cycle de 4), puis r = 3,9 ou 4. Sous r ≈ 3,57, les écarts se referment ; au-delà, ils explosent.</p>
+      </div>
+    </div>
+    <div class="think">
+      <h3>À observer</h3>
+      <p>Dans le régime chaotique, l'écart est multiplié en moyenne par un facteur constant à chaque pas : la courbe du bas monte en ligne droite (exposant de Lyapunov). Gagner une décimale de précision ne fait gagner que quelques pas de prévision.</p>
+      <p>Le déclic : déterministe ne veut pas dire prévisible. Dans l'espace d'états, deux points voisins s'éloignent exponentiellement. Prévoir la météo à trois semaines demanderait une précision de mesure qui n'existe pas.</p>
+    </div>
+  </section>
+
+  <section class="plate" id="p-prisonnier" hidden>
+    <div class="plate-head">
+      <h2>Idée 4 · Le dilemme du prisonnier</h2>
+      <p>À chaque tour, deux joueurs coopèrent (C) ou trahissent (D). Trahir rapporte toujours plus, quel que soit le choix de l'autre. Pourtant deux traîtres gagnent moins que deux coopérants.</p>
+    </div>
+    <div class="two">
+      <div class="sheet">
+        <canvas id="pd-cv" style="height:300px" aria-label="Évolution des parts de chaque stratégie dans la population"></canvas>
+        <p class="note">Parts de la population au fil des générations : chaque stratégie se reproduit en proportion de ses gains (dynamique du réplicateur).</p>
+      </div>
+      <div class="sheet">
+        <div class="tblwrap"><table>
+          <thead><tr><th></th><th>l'autre C</th><th>l'autre D</th></tr></thead>
+          <tbody><tr><td>je coopère</td><td class="mono">3</td><td class="mono">0</td></tr><tr><td>je trahis</td><td class="mono">5</td><td class="mono">1</td></tr></tbody>
+        </table></div>
+        <p class="note">Stratégies en lice (clic pour retirer ou remettre)</p>
+        <div class="row" id="pd-strats"></div>
+        <label class="ctl">Erreurs d'exécution <input id="pd-n" type="range" min="0" max="10" value="0"><span id="pd-n-v" class="mono">0 %</span></label>
+        <div class="tblwrap"><table>
+          <thead><tr><th>Stratégie</th><th>Gain moyen par tour</th><th>Part finale</th></tr></thead>
+          <tbody id="pd-tb"></tbody>
+        </table></div>
+      </div>
+    </div>
+    <div class="think">
+      <h3>À observer</h3>
+      <p>« Toujours trahir » ne perd aucun duel, et pourtant il perd le tournoi : face aux stratégies réciproques, il tombe vite à 1 point par tour pendant qu'elles se font 3 points entre elles. Retire donnant-donnant, rancunier et Pavlov : les traîtres envahissent tout. Ajoute des erreurs d'exécution et regarde qui résiste au malentendu.</p>
+      <p>Le déclic : la rationalité individuelle peut produire un résultat collectif que tout le monde trouve mauvais. Pollution, course aux armements, embouteillages. La coopération apparaît quand le jeu se répète et que l'avenir compte.</p>
+    </div>
+  </section>
+
+  <section class="plate" id="p-puissance" hidden>
+    <div class="plate-head">
+      <h2>Idée 5 · Médiocristan et Extrémistan</h2>
+      <p>On tire au hasard des tailles humaines (loi normale) et des fortunes (loi de Pareto). Dans le premier monde, la moyenne se stabilise vite. Dans le second, un seul tirage peut tout changer.</p>
+    </div>
+    <div class="two">
+      <div class="sheet">
+        <canvas id="pw-cv1" style="height:190px" aria-label="Moyenne courante des tailles"></canvas>
+        <canvas id="pw-cv2" style="height:210px" aria-label="Moyenne courante des fortunes"></canvas>
+      </div>
+      <div class="sheet">
+        <div class="row">
+          <button class="btn" id="pw-add" type="button">+1 000 tirages</button>
+          <button class="btn" id="pw-add10" type="button">+10 000 tirages</button>
+          <button class="btn" id="pw-reset" type="button">Recommencer</button>
+        </div>
+        <label class="ctl">Exposant α de Pareto <input id="pw-a" type="range" min="0.8" max="3" step="0.05" value="1.2"><span id="pw-a-v" class="mono"></span></label>
+        <div class="stats">
+          <div class="stat"><span class="k">Tirages</span><span class="v" id="pw-n"></span></div>
+          <div class="stat"><span class="k">Moyenne théorique des fortunes</span><span class="v" id="pw-th"></span></div>
+          <div class="stat"><span class="k">Part du plus grand (tailles)</span><span class="v" id="pw-mn"></span></div>
+          <div class="stat"><span class="k">Part du plus grand (fortunes)</span><span class="v" id="pw-mp"></span></div>
+        </div>
+        <p class="note">Fortunes en multiples du minimum : P(X &gt; x) = x^(−α). Avec α ≈ 1,16, 20 % des gens détiennent 80 % du total.</p>
+      </div>
+    </div>
+    <div class="think">
+      <h3>À observer</h3>
+      <p>La plus grande taille ne représente jamais qu'une part infime du total. La plus grande fortune peut peser une fraction notable de tout l'échantillon, et la moyenne fait des sauts à chaque nouveau milliardaire. Sous α = 1, la moyenne théorique est infinie : elle ne converge jamais.</p>
+      <p>Le déclic : avant de raisonner sur une moyenne, il faut savoir dans quel monde on est. Séismes, tailles des villes, ventes de livres, pertes financières vivent en Extrémistan, où l'exception fait la règle.</p>
+    </div>
+  </section>
+
+  <section class="plate" id="p-regression" hidden>
+    <div class="plate-head">
+      <h2>Idée 6 · La régression vers la moyenne</h2>
+      <p>300 élèves passent deux examens. Chaque note est un mélange de niveau (stable) et de chance (renouvelée). Que deviennent les meilleurs du premier examen au second ?</p>
+    </div>
+    <div class="two">
+      <div class="sheet">
+        <canvas id="rg-cv" style="height:380px" aria-label="Nuage des notes : examen 1 en abscisse, examen 2 en ordonnée"></canvas>
+        <p class="note"><span style="color:var(--warm)">●</span> 10 % meilleurs à l'examen 1 · <span style="color:var(--accent)">●</span> 10 % moins bons · tirets : y = x · trait plein : la droite de régression y = ρ·x</p>
+      </div>
+      <div class="sheet">
+        <label class="ctl">Part de la chance <input id="rg-l" type="range" min="0" max="100" value="50"><span id="rg-l-v" class="mono"></span></label>
+        <button class="btn" id="rg-new" type="button">Nouvelle promotion</button>
+        <div class="stats">
+          <div class="stat"><span class="k">Meilleurs : examen 1</span><span class="v" id="rg-t1"></span></div>
+          <div class="stat"><span class="k">Meilleurs : examen 2</span><span class="v" id="rg-t2"></span></div>
+          <div class="stat"><span class="k">Moins bons : examen 1</span><span class="v" id="rg-b1"></span></div>
+          <div class="stat"><span class="k">Moins bons : examen 2</span><span class="v" id="rg-b2"></span></div>
+          <div class="stat"><span class="k">Corrélation théorique ρ</span><span class="v" id="rg-rho"></span></div>
+        </div>
+        <p class="note">Notes en écarts-types (σ) par rapport à la moyenne de la promotion.</p>
+      </div>
+    </div>
+    <div class="think">
+      <h3>À observer</h3>
+      <p>Les meilleurs baissent et les moins bons remontent, alors que personne n'a changé de niveau. Être en tête au premier examen, c'est souvent avoir eu du talent <em>et</em> de la chance ; la chance ne se répète pas. Avec 0 % de chance, rien ne bouge ; avec 100 %, tout retombe à zéro.</p>
+      <p>Le déclic (Kahneman) : un instructeur de vol constate que les félicitations après un bon atterrissage sont suivies d'un moins bon, et les reproches après un mauvais d'un meilleur. Il en conclut que les reproches marchent. Il n'a observé que la régression. La moitié des « leçons de l'expérience » sont de cette nature.</p>
+    </div>
+  </section>
+
+  <footer>Cahier 1 : <a class="atlas-link" href="https://claude.ai/artifact/MJNToqwPhwgnPb4pM8PDce" target="_blank" rel="noopener">Atlas des espaces d'états</a>. Cahier 2 : <a class="expo-link" href="https://claude.ai/artifact/7AeGqZP2WnSS8dmckSFYP3" target="_blank" rel="noopener">Lois exponentielles</a>.</footer>
+</div>
+
+<script>
+// ================= Outils communs =================
+const $ = (id) => document.getElementById(id);
+const TAU = Math.PI * 2;
+const C = {}; let themeVersion = 0;
+function readTheme() { const s = getComputedStyle(document.documentElement); for (const k of ["paper", "panel", "ink", "ink-soft", "rule", "accent", "warm", "hl"]) C[k] = s.getPropertyValue("--" + k).trim(); themeVersion++; }
+readTheme();
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", readTheme);
+new MutationObserver(readTheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+function fit(cv) {
+  const w = cv.clientWidth, h = cv.clientHeight, d = Math.min(2, window.devicePixelRatio || 1);
+  if (cv._w !== w || cv._h !== h || cv._d !== d) { cv.width = Math.max(1, Math.round(w * d)); cv.height = Math.max(1, Math.round(h * d)); cv._w = w; cv._h = h; cv._d = d; }
+  const ctx = cv.getContext("2d"); ctx.setTransform(d, 0, 0, d, 0, 0); ctx.fillStyle = C.panel; ctx.fillRect(0, 0, w, h);
+  return { ctx, w, h, d };
+}
+function ptr(cv, e) { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
+function onDrag(cv, { down, move, up }) {
+  cv.addEventListener("pointerdown", (e) => { const [x, y] = ptr(cv, e); if (down && down(x, y) === false) return; cv._drag = true; cv.setPointerCapture(e.pointerId); e.preventDefault(); });
+  cv.addEventListener("pointermove", (e) => { if (cv._drag && move) { const [x, y] = ptr(cv, e); move(x, y); } });
+  const end = () => { if (cv._drag) { cv._drag = false; up && up(); } };
+  cv.addEventListener("pointerup", end); cv.addEventListener("pointercancel", end);
+}
+const HAND = (s = 15) => `700 ${s}px Kalam, cursive`;
+const MONO = (s = 12) => `${s}px "IBM Plex Mono", monospace`;
+function text(ctx, t, x, y, { font = MONO(), color = C.ink, align = "center", base = "middle" } = {}) { ctx.font = font; ctx.fillStyle = color; ctx.textAlign = align; ctx.textBaseline = base; ctx.fillText(t, x, y); }
+function dot(ctx, x, y, r, fill, stroke, lw = 1.5) { ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.stroke(); } }
+function line(ctx, x1, y1, x2, y2, color, lw = 1.5, dash = null) { ctx.beginPath(); ctx.setLineDash(dash || []); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.stroke(); ctx.setLineDash([]); }
+function poly(ctx, pts, color, lw = 2, dash = null) { ctx.beginPath(); ctx.setLineDash(dash || []); let on = false; for (const p of pts) { if (!p || !isFinite(p[0]) || !isFinite(p[1])) { on = false; continue; } if (!on) { ctx.moveTo(p[0], p[1]); on = true; } else ctx.lineTo(p[0], p[1]); } ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.stroke(); ctx.setLineDash([]); }
+const nf = (v, d = 2) => (Math.abs(v) < 5e-13 ? 0 : v).toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d });
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const gauss = () => Math.sqrt(-2 * Math.log(1 - Math.random())) * Math.cos(TAU * Math.random());
+function axes(ctx, x0, y0, W, H, xr, yr, o = {}) {
+  const f = (v, l) => (l ? Math.log10(v) : v);
+  const X = (v) => x0 + ((f(v, o.logX) - f(xr[0], o.logX)) / (f(xr[1], o.logX) - f(xr[0], o.logX))) * W;
+  const Y = (v) => y0 + H - ((f(v, o.logY) - f(yr[0], o.logY)) / (f(yr[1], o.logY) - f(yr[0], o.logY))) * H;
+  ctx.strokeStyle = C.ink; ctx.lineWidth = 1.2; ctx.strokeRect(x0, y0, W, H);
+  const s = { font: MONO(10), color: C["ink-soft"] };
+  (o.xt || []).forEach((v) => { line(ctx, X(v), y0 + H, X(v), y0 + H + 4, C.ink, 1); text(ctx, o.xf ? o.xf(v) : String(v), X(v), y0 + H + 13, s); });
+  (o.yt || []).forEach((v) => { line(ctx, x0 - 4, Y(v), x0, Y(v), C.ink, 1); text(ctx, o.yf ? o.yf(v) : String(v), x0 - 6, Y(v), { ...s, align: "right" }); });
+  if (o.xl) text(ctx, o.xl, x0 + W, y0 + H + 27, { ...s, align: "right" });
+  if (o.yl) text(ctx, o.yl, x0, y0 - 9, { ...s, align: "left" });
+  return { X, Y };
+}
+function clip(ctx, x0, y0, W, H, fn) { ctx.save(); ctx.beginPath(); ctx.rect(x0, y0, W, H); ctx.clip(); fn(); ctx.restore(); }
+const pct = (v, d = 1) => nf(v * 100, d) + " %";
+
+// ================= Idée 1 : Bayes =================
+const BA = {
+  init() { ["ba-prev", "ba-sens", "ba-spec"].forEach((id) => $(id).addEventListener("input", () => this.stats())); this.stats(); },
+  vals() { return { p: +$("ba-prev").value / 1000, se: +$("ba-sens").value / 100, sp: +$("ba-spec").value / 100 }; },
+  stats() {
+    const { p, se, sp } = this.vals();
+    const bay = (q) => (q * se) / (q * se + (1 - q) * (1 - sp));
+    const post = bay(p);
+    $("ba-prev-v").textContent = pct(p); $("ba-sens-v").textContent = pct(se); $("ba-spec-v").textContent = pct(sp);
+    $("ba-tp").textContent = nf(1000 * p * se, 1); $("ba-fp").textContent = nf(1000 * (1 - p) * (1 - sp), 1);
+    $("ba-post").textContent = pct(post); $("ba-post2").textContent = pct(bay(post));
+  },
+  frame() {
+    const { ctx, w, h } = fit($("ba-cv")); const { p, se, sp } = this.vals();
+    const N = 1000, cols = 50, rows = 20, nS = Math.round(p * N), nTP = Math.round(nS * se), nFP = Math.round((N - nS) * (1 - sp));
+    const cell = Math.min((w - 16) / cols, (h - 16) / rows), ox = (w - cell * cols) / 2, oy = (h - cell * rows) / 2, r = cell * 0.36;
+    for (let i = 0; i < N; i++) {
+      const x = ox + (Math.floor(i / rows) + 0.5) * cell, y = oy + ((i % rows) + 0.5) * cell;
+      if (i < nS) { if (i < nTP) dot(ctx, x, y, r, C.warm); else dot(ctx, x, y, r * 0.85, null, C.warm, 1.3); }
+      else if (i - nS < nFP) dot(ctx, x, y, r, C.accent);
+      else dot(ctx, x, y, r * 0.45, C["ink-soft"]);
+    }
+  },
+};
+
+// ================= Idée 2 : sélection =================
+const TARGET = "JE PENSE DONC JE SUIS", ALPH = "ABCDEFGHIJKLMNOPQRSTUVWXYZ ";
+const rc = () => ALPH[Math.floor(Math.random() * ALPH.length)];
+const rstr = () => Array.from(TARGET, rc).join("");
+const score = (s) => { let k = 0; for (let i = 0; i < TARGET.length; i++) if (s[i] === TARGET[i]) k++; return k; };
+const SE = {
+  init() {
+    $("se-run").onclick = () => { if (this.cum === TARGET) this.reset(); this.run = !this.run; this.btn(); };
+    $("se-reset").onclick = () => this.reset();
+    $("se-mu").oninput = () => ($("se-mu-v").textContent = $("se-mu").value + " %");
+    this.reset();
+  },
+  btn() { $("se-run").textContent = this.run ? "Pause" : "Lancer"; $("se-run").setAttribute("aria-pressed", this.run); },
+  reset() { this.cum = rstr(); this.best = rstr(); this.g = 0; this.hc = [score(this.cum)]; this.hr = [score(this.best)]; this.run = false; this.btn(); this.show(); },
+  step() {
+    const mu = +$("se-mu").value / 100; let best = this.cum, bs = score(best);
+    for (let k = 0; k < 100; k++) { let c = ""; for (const ch of this.cum) c += Math.random() < mu ? rc() : ch; const s = score(c); if (s > bs) { bs = s; best = c; } }
+    this.cum = best;
+    let br = score(this.best);
+    for (let k = 0; k < 100; k++) { const c = rstr(), s = score(c); if (s > br) { br = s; this.best = c; } }
+    this.g++; this.hc.push(bs); this.hr.push(br);
+    if (bs === TARGET.length || this.g >= 3000) { this.run = false; this.btn(); }
+    this.show();
+  },
+  hl(s) { return Array.from(s, (ch, i) => `<span style="color:var(${ch === TARGET[i] ? "--accent" : "--ink-soft"})">${ch === " " ? "&nbsp;" : ch}</span>`).join(""); },
+  show() {
+    $("se-cum").innerHTML = this.hl(this.cum); $("se-rnd").innerHTML = this.hl(this.best);
+    $("se-g").textContent = this.g; $("se-sc").textContent = score(this.cum) + " / 21"; $("se-sr").textContent = score(this.best) + " / 21";
+  },
+  frame() {
+    if (this.run) { this.step(); if (!reduced && this.run) this.step(); }
+    const { ctx, w, h } = fit($("se-cv")); const gm = Math.max(40, this.g);
+    const { X, Y } = axes(ctx, 40, 20, w - 56, h - 58, [0, gm], [0, 21], { xt: [0, Math.round(gm / 2), gm], yt: [0, 7, 14, 21], xl: "générations", yl: "lettres justes" });
+    poly(ctx, this.hr.map((v, i) => [X(i), Y(v)]), C.warm, 2);
+    poly(ctx, this.hc.map((v, i) => [X(i), Y(v)]), C.accent, 2.4);
+  },
+};
+
+// ================= Idée 3 : chaos =================
+const CH = {
+  init() { ["ch-r", "ch-e"].forEach((id) => $(id).addEventListener("input", () => this.calc())); this.calc(); },
+  traj(r, x, n) { const a = [x]; for (let i = 0; i < n; i++) { x = r * x * (1 - x); a.push(x); } return a; },
+  horizon(r, e) { const a = this.traj(r, 0.3, 300), b = this.traj(r, 0.3 + e, 300); for (let i = 0; i <= 300; i++) if (Math.abs(a[i] - b[i]) > 0.1) return i; return Infinity; },
+  calc() {
+    const r = +$("ch-r").value, k = +$("ch-e").value, e = Math.pow(10, k);
+    this.a = this.traj(r, 0.3, 80); this.b = this.traj(r, 0.3 + e, 80);
+    $("ch-r-v").textContent = nf(r, 3); $("ch-e-v").textContent = "10^" + k;
+    const h1 = this.horizon(r, e), h2 = this.horizon(r, e / 1000);
+    $("ch-h").textContent = isFinite(h1) ? h1 + " pas" : "jamais (≤ 300)";
+    $("ch-h2").textContent = isFinite(h2) ? h2 + " pas" : "jamais (≤ 300)";
+    $("ch-gain").textContent = isFinite(h1) && isFinite(h2) ? "≈ " + nf((h2 - h1) / 3, 1) + " pas" : "—";
+  },
+  frame() {
+    let { ctx, w, h } = fit($("ch-cv1"));
+    let A = axes(ctx, 40, 16, w - 56, h - 50, [0, 80], [0, 1], { xt: [0, 20, 40, 60, 80], yt: [0, 0.5, 1], yf: (v) => nf(v, 1), yl: "xₙ" });
+    poly(ctx, this.a.map((v, i) => [A.X(i), A.Y(v)]), C.accent, 2);
+    poly(ctx, this.b.map((v, i) => [A.X(i), A.Y(v)]), C.warm, 1.4, [4, 3]);
+    ({ ctx, w, h } = fit($("ch-cv2")));
+    A = axes(ctx, 40, 16, w - 56, h - 50, [0, 80], [-17, 0], { xt: [0, 20, 40, 60, 80], yt: [-15, -10, -5, 0], yf: (v) => "1e" + v, xl: "pas n", yl: "écart |xₙ − x'ₙ| (log)" });
+    line(ctx, A.X(0), A.Y(-1), A.X(80), A.Y(-1), C.rule, 1, [3, 3]);
+    poly(ctx, this.a.map((v, i) => [A.X(i), A.Y(Math.log10(Math.max(1e-17, Math.abs(v - this.b[i]))))]), C.ink, 1.8);
+  },
+};
+
+// ================= Idée 4 : prisonnier =================
+const PAY = { CC: [3, 3], CD: [0, 5], DC: [5, 0], DD: [1, 1] };
+const last = (a) => a[a.length - 1];
+const STRATS = [
+  { n: "Toujours coopérer", f: () => "C", c: "accent" },
+  { n: "Toujours trahir", f: () => "D", c: "warm" },
+  { n: "Donnant-donnant", f: (m, o) => (o.length ? last(o) : "C"), c: "ink" },
+  { n: "Rancunier", f: (m, o) => (o.includes("D") ? "D" : "C"), c: "hl" },
+  { n: "Pavlov", f: (m, o) => (!m.length || last(m) === last(o) ? "C" : "D"), c: "ink-soft" },
+  { n: "Au hasard", f: () => (Math.random() < 0.5 ? "C" : "D"), c: "accent", dash: true },
+];
+const PD = {
+  on: STRATS.map(() => true),
+  init() {
+    STRATS.forEach((s, i) => {
+      const b = document.createElement("button"); b.className = "btn"; b.type = "button"; b.id = "pd-s" + i; b.textContent = s.n; b.setAttribute("aria-pressed", "true");
+      b.onclick = () => { if (this.on[i] && this.on.filter(Boolean).length <= 2) return; this.on[i] = !this.on[i]; b.setAttribute("aria-pressed", this.on[i]); this.calc(); };
+      $("pd-strats").appendChild(b);
+    });
+    $("pd-n").addEventListener("input", () => { $("pd-n-v").textContent = $("pd-n").value + " %"; this.calc(); });
+    this.calc();
+  },
+  play(i, j, noise) {
+    const mi = [], mj = []; let si = 0, sj = 0; const flip = (a) => (Math.random() < noise ? (a === "C" ? "D" : "C") : a);
+    for (let t = 0; t < 150; t++) { const a = flip(STRATS[i].f(mi, mj)), b = flip(STRATS[j].f(mj, mi)), p = PAY[a + b]; si += p[0]; sj += p[1]; mi.push(a); mj.push(b); }
+    return [si / 150, sj / 150];
+  },
+  calc() {
+    const idx = STRATS.map((_, i) => i).filter((i) => this.on[i]), k = idx.length, noise = +$("pd-n").value / 100, R = 6;
+    const M = idx.map(() => Array(k).fill(0));
+    for (let a = 0; a < k; a++) for (let b = 0; b <= a; b++) for (let r = 0; r < R; r++) { const [x, y] = this.play(idx[a], idx[b], noise); M[a][b] += x / R; if (a !== b) M[b][a] += y / R; else M[a][a] += 0; }
+    let x = Array(k).fill(1 / k); const hist = [x];
+    for (let g = 0; g < 120; g++) { const f = M.map((row) => row.reduce((s, v, j) => s + v * x[j], 0)), fb = f.reduce((s, v, i) => s + v * x[i], 0); x = x.map((v, i) => (v * f[i]) / fb); hist.push(x); }
+    this.idx = idx; this.hist = hist;
+    $("pd-tb").innerHTML = idx.map((s, a) => {
+      const sw = STRATS[s].dash ? `border-top:3px dashed var(--${STRATS[s].c})` : `background:var(--${STRATS[s].c})`;
+      return `<tr><td><span class="sw" style="${sw}"></span>${STRATS[s].n}</td><td class="mono">${nf(M[a].reduce((p, v) => p + v, 0) / k, 2)}</td><td class="mono">${pct(x[a])}</td></tr>`;
+    }).join("");
+  },
+  frame() {
+    const { ctx, w, h } = fit($("pd-cv"));
+    const { X, Y } = axes(ctx, 44, 20, w - 60, h - 58, [0, 120], [0, 1], { xt: [0, 40, 80, 120], yt: [0, 0.5, 1], yf: (v) => Math.round(v * 100) + " %", xl: "générations", yl: "part de la population" });
+    this.idx.forEach((s, a) => poly(ctx, this.hist.map((x, g) => [X(g), Y(x[a])]), C[STRATS[s].c], 2.2, STRATS[s].dash ? [5, 4] : null));
+  },
+};
+
+// ================= Idée 5 : lois de puissance =================
+const PW = {
+  init() {
+    $("pw-a").addEventListener("input", () => this.reset());
+    $("pw-add").onclick = () => this.add(1000); $("pw-add10").onclick = () => this.add(10000); $("pw-reset").onclick = () => this.reset();
+    this.reset();
+  },
+  reset() { this.a = +$("pw-a").value; this.n = 0; this.sn = 0; this.sp = 0; this.mxn = 0; this.mxp = 0; this.mn = []; this.mp = []; this.add(1000); },
+  add(k) {
+    for (let i = 0; i < k && this.n < 200000; i++) {
+      const t = 170 + 10 * gauss(), f = Math.pow(1 - Math.random(), -1 / this.a);
+      this.n++; this.sn += t; this.sp += f; this.mxn = Math.max(this.mxn, t); this.mxp = Math.max(this.mxp, f);
+      this.mn.push(this.sn / this.n); this.mp.push(this.sp / this.n);
+    }
+    $("pw-a-v").textContent = nf(this.a, 2); $("pw-n").textContent = this.n.toLocaleString("fr-FR");
+    $("pw-th").textContent = this.a > 1 ? nf(this.a / (this.a - 1), 2) : "infinie";
+    $("pw-mn").textContent = pct(this.mxn / this.sn, 3); $("pw-mp").textContent = pct(this.mxp / this.sp, 1);
+  },
+  pts(arr) { const out = []; for (let e = 0; e <= Math.log10(arr.length); e += 0.01) { const i = Math.min(arr.length, Math.round(Math.pow(10, e))) - 1; out.push([i + 1, arr[i]]); } return out; },
+  frame() {
+    const xr = [1, Math.max(10, this.n)], xt = [1, 10, 100, 1000, 1e4, 1e5].filter((v) => v <= xr[1]), xf = (v) => (v >= 1000 ? v / 1000 + " k" : String(v));
+    let { ctx, w, h } = fit($("pw-cv1"));
+    let A = axes(ctx, 46, 18, w - 62, h - 50, xr, [150, 190], { logX: true, xt, xf, yt: [150, 170, 190], yl: "moyenne des tailles (cm)" });
+    line(ctx, A.X(1), A.Y(170), A.X(xr[1]), A.Y(170), C["ink-soft"], 1, [4, 3]);
+    clip(ctx, 46, 18, w - 62, h - 50, () => poly(ctx, this.pts(this.mn).map(([n, v]) => [A.X(n), A.Y(v)]), C.accent, 2));
+    ({ ctx, w, h } = fit($("pw-cv2")));
+    const top = Math.max(10, ...this.mp.filter((_, i) => i > 9)) * 1.3;
+    A = axes(ctx, 46, 18, w - 62, h - 50, xr, [1, top], { logX: true, logY: true, xt, xf, yt: [1, 10, 100, 1000, 1e4].filter((v) => v <= top), yf: xf, xl: "nombre de tirages (log)", yl: "moyenne des fortunes (log)" });
+    if (this.a > 1) line(ctx, A.X(1), A.Y(this.a / (this.a - 1)), A.X(xr[1]), A.Y(this.a / (this.a - 1)), C["ink-soft"], 1, [4, 3]);
+    clip(ctx, 46, 18, w - 62, h - 50, () => poly(ctx, this.pts(this.mp).map(([n, v]) => [A.X(n), A.Y(v)]), C.warm, 2));
+  },
+};
+
+// ================= Idée 6 : régression =================
+const RG = {
+  init() { $("rg-l").addEventListener("input", () => this.gen(false)); $("rg-new").onclick = () => this.gen(true); this.gen(true); },
+  gen(fresh) {
+    if (fresh) this.z = Array.from({ length: 300 }, () => [gauss(), gauss(), gauss()]);
+    const L = +$("rg-l").value / 100, a = Math.sqrt(1 - L), b = Math.sqrt(L);
+    this.rho = 1 - L; this.pts = this.z.map(([t, u, v]) => [a * t + b * u, a * t + b * v]);
+    const ord = this.pts.map((_, i) => i).sort((i, j) => this.pts[j][0] - this.pts[i][0]);
+    this.top = new Set(ord.slice(0, 30)); this.bot = new Set(ord.slice(-30));
+    const m = (set, k) => [...set].reduce((s, i) => s + this.pts[i][k], 0) / set.size, sg = (v) => (v >= 0 ? "+" : "") + nf(v, 2) + " σ";
+    this.mt = [m(this.top, 0), m(this.top, 1)]; this.mb = [m(this.bot, 0), m(this.bot, 1)];
+    $("rg-l-v").textContent = Math.round(L * 100) + " %"; $("rg-rho").textContent = nf(this.rho, 2);
+    $("rg-t1").textContent = sg(this.mt[0]); $("rg-t2").textContent = sg(this.mt[1]); $("rg-b1").textContent = sg(this.mb[0]); $("rg-b2").textContent = sg(this.mb[1]);
+  },
+  frame() {
+    const { ctx, w, h } = fit($("rg-cv")), S = Math.min(w - 60, h - 56), x0 = 40 + (w - 60 - S) / 2;
+    const t = [-3, -2, -1, 0, 1, 2, 3];
+    const { X, Y } = axes(ctx, x0, 20, S, S, [-3.5, 3.5], [-3.5, 3.5], { xt: t, yt: t, xl: "examen 1 (σ)", yl: "examen 2 (σ)" });
+    clip(ctx, x0, 20, S, S, () => {
+      line(ctx, X(-3.5), Y(-3.5), X(3.5), Y(3.5), C["ink-soft"], 1, [4, 3]);
+      line(ctx, X(-3.5), Y(-3.5 * this.rho), X(3.5), Y(3.5 * this.rho), C.ink, 1.5);
+      this.pts.forEach(([p, q], i) => dot(ctx, X(p), Y(q), this.top.has(i) || this.bot.has(i) ? 3.4 : 2.2, this.top.has(i) ? C.warm : this.bot.has(i) ? C.accent : C.rule));
+      for (const [m, c] of [[this.mt, C.warm], [this.mb, C.accent]]) { line(ctx, X(m[0]), Y(m[0]), X(m[0]), Y(m[1]), c, 2); dot(ctx, X(m[0]), Y(m[1]), 6, C.panel, c, 2.5); }
+    });
+  },
+};
+
+// ================= Routage & boucle =================
+if (location.protocol === "file:" || location.hostname.endsWith("github.io")) {
+  document.querySelectorAll(".atlas-link").forEach((a) => { a.href = "atlas.html"; a.removeAttribute("target"); });
+  document.querySelectorAll(".expo-link").forEach((a) => { a.href = "exponentielles.html"; a.removeAttribute("target"); });
+}
+const PLATES = { bayes: BA, selection: SE, chaos: CH, prisonnier: PD, puissance: PW, regression: RG };
+Object.values(PLATES).forEach((p) => p.init());
+let active = "bayes";
+function route() {
+  const h = location.hash.replace("#", ""); active = PLATES[h] ? h : "bayes";
+  for (const k in PLATES) $("p-" + k).hidden = k !== active;
+  document.querySelectorAll("[data-plate]").forEach((a) => { if (a.dataset.plate === active) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+}
+addEventListener("hashchange", route); route();
+function loop() { try { PLATES[active].frame(); } catch (e) { console.error(e); } requestAnimationFrame(loop); }
+requestAnimationFrame(loop);
+</script>
