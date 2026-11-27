@@ -1,0 +1,426 @@
+<meta charset="utf-8">
+<title>L'échelle de la donnée</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout : une scène plein écran (canvas) en encre sur papier, titre en haut, lecture de l'échelle au centre, curseur logarithmique en bas, fiche de l'objet en panneau. */
+:root {
+  --paper: #f6f7f3;
+  --ink: #1c2332;
+  --ink-soft: #5d6677;
+  --accent: #1f5fbf;
+  --rule: #dde1e8;
+  --hl: #f3d35b;
+  --panel: #ffffff;
+  --f-hand: "Kalam", "Comic Neue", "Segoe Print", cursive;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --f-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #131720; --ink: #e6e8ee; --ink-soft: #98a1b3; --accent: #82b2ff;
+    --rule: #252b37; --hl: #a8862a; --panel: #1b202b; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #131720; --ink: #e6e8ee; --ink-soft: #98a1b3; --accent: #82b2ff;
+  --rule: #252b37; --hl: #a8862a; --panel: #1b202b; color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: var(--paper); color: var(--ink); font-family: var(--f-ui);
+  overflow: hidden; position: relative;
+}
+#scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+#scene.dragging { cursor: grabbing; }
+
+.top {
+  position: absolute; top: 0; left: 0; right: 0; pointer-events: none;
+  padding-top: 14px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center;
+}
+.brand { align-self: flex-start; font-family: var(--f-hand); font-weight: 700; font-size: 1.15rem; color: var(--ink-soft); }
+.brand b { color: var(--accent); font-weight: 700; }
+.readout { font-family: var(--f-hand); font-weight: 700; font-size: clamp(2.2rem, 6vw, 3.6rem); line-height: 1.05; margin-top: 4px; }
+.readout-sub { font-family: var(--f-mono); font-size: .85rem; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.readout-sub sup { font-size: .7em; }
+
+.controls {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); padding-top: 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  background: linear-gradient(to top, var(--paper) 60%, transparent);
+}
+.slider-wrap { flex: 1 1 260px; min-width: 0; display: flex; align-items: center; gap: 10px; }
+.end { font-family: var(--f-hand); font-size: .95rem; color: var(--ink-soft); white-space: nowrap; }
+input[type=range] { flex: 1; min-width: 0; accent-color: var(--accent); height: 28px; }
+.btn {
+  font: 500 .85rem var(--f-ui); color: var(--ink); background: var(--panel);
+  border: 1.5px solid var(--ink); border-radius: 6px; padding: 6px 12px; cursor: pointer;
+}
+.btn[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.btn:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hint { font-family: var(--f-hand); font-size: .95rem; color: var(--ink-soft); width: 100%; text-align: center; }
+
+.card {
+  position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); top: 120px; width: min(340px, calc(100% - 32px));
+  background: var(--panel); border: 1.5px solid var(--ink); border-radius: 4px;
+  box-shadow: 4px 4px 0 var(--rule); padding: 16px 18px; display: flex; flex-direction: column; gap: 8px;
+}
+.card h2 { font-family: var(--f-hand); font-weight: 700; font-size: 1.5rem; line-height: 1.15; margin: 0; padding-right: 28px; text-wrap: balance; }
+.card .size { font-family: var(--f-mono); font-size: .95rem; color: var(--accent); font-variant-numeric: tabular-nums; }
+.card .size small { color: var(--ink-soft); font-size: .8rem; }
+.card p { margin: 0; line-height: 1.5; font-size: .92rem; }
+.card .cmp { font-family: var(--f-hand); font-size: 1.02rem; color: var(--ink-soft); border-top: 1.5px dashed var(--rule); padding-top: 8px; }
+.card .close { position: absolute; top: 8px; right: 10px; background: none; border: 0; font-size: 1.4rem; color: var(--ink-soft); cursor: pointer; line-height: 1; padding: 4px; }
+@media (max-width: 640px) {
+  .card { top: auto; bottom: 120px; left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); width: auto; }
+  .hint { display: none; }
+}
+</style>
+
+<canvas id="scene" aria-label="Scène zoomable montrant des objets numériques à l'échelle de leur taille en octets"></canvas>
+
+<div class="top">
+  <div class="brand">L'échelle de la <b>donnée</b></div>
+  <div class="readout" id="readout">1 octet</div>
+  <div class="readout-sub" id="readoutSub">10<sup>0</sup> octet · 2<sup>3</sup> bits</div>
+</div>
+
+<aside class="card" id="card" hidden aria-live="polite">
+  <button class="close" id="cardClose" aria-label="Fermer la fiche">×</button>
+  <h2 id="cardTitle"></h2>
+  <div class="size" id="cardSize"></div>
+  <p id="cardDesc"></p>
+  <div class="cmp" id="cardCmp"></div>
+</aside>
+
+<div class="controls">
+  <div class="slider-wrap">
+    <span class="end">1 bit</span>
+    <input type="range" id="zoom" min="-1.2" max="24" step="0.001" value="0" aria-label="Échelle (puissance de 10 en octets)">
+    <span class="end">1 Yo</span>
+  </div>
+  <button class="btn" id="play" aria-pressed="false">▶ Voyage</button>
+  <button class="btn" id="units" aria-pressed="false" title="Basculer entre unités décimales (ko, Mo) et binaires (Kio, Mio)">ko → Kio</button>
+  <div class="hint">Molette, glisser ou curseur pour changer d'échelle · clic sur un objet pour sa fiche</div>
+</div>
+
+<script>
+// ---------- Données (tailles en octets) ----------
+const ITEMS = [
+  { n: "Un bit", b: 0.125, m: "0|1", d: "La plus petite unité d'information : un 0 ou un 1. Un interrupteur ouvert ou fermé, une tension haute ou basse." },
+  { n: "Le caractère « A »", b: 1, m: "A", d: "En ASCII, chaque caractère tient sur un octet, soit 8 bits. « A » s'écrit 01000001, c'est-à-dire 65." },
+  { n: "Un emoji en UTF-8", b: 4, m: ":)", d: "Les emojis sortent de la table ASCII : en UTF-8, la plupart occupent 4 octets." },
+  { n: "Une adresse IPv4", b: 4, m: "IP", d: "Quatre nombres de 0 à 255, comme 192.168.1.10. Il n'existe qu'environ 4,3 milliards d'adresses IPv4 (2³²)." },
+  { n: "Une adresse MAC", b: 6, m: "MAC", d: "L'identifiant matériel d'une carte réseau, par exemple 3C:22:FB:0A:41:9E." },
+  { n: "Le mot « Bonjour »", b: 7, m: "abc", d: "7 lettres, 7 octets en ASCII. Le même mot avec un accent prendrait un octet de plus en UTF-8." },
+  { n: "Un entier 64 bits", b: 8, m: "int", d: "Le format des nombres entiers dans la plupart des processeurs actuels : jusqu'à environ 9,2 × 10¹⁸." },
+  { n: "Une adresse IPv6", b: 16, m: "v6", d: "128 bits, soit 2¹²⁸ adresses possibles : de quoi en donner des milliards à chaque grain de sable." },
+  { n: "Un en-tête IPv4", b: 20, m: "hdr", d: "Les 20 octets minimum ajoutés devant chaque paquet : adresses source et destination, durée de vie (TTL), protocole…" },
+  { n: "Une clé AES-256", b: 32, m: "key", d: "256 bits de secret. Tester toutes les clés possibles prendrait bien plus que l'âge de l'Univers." },
+  { n: "Un SMS", b: 140, m: "sms", d: "140 octets, soit 160 caractères de 7 bits. C'est cette limite qui a inspiré la longueur des premiers tweets." },
+  { n: "Un tweet de 280 caractères", b: 280, m: "#", d: "Texte seul, en ASCII. Les métadonnées envoyées avec (auteur, date, identifiants) pèsent bien plus lourd." },
+  { n: "Une requête HTTP GET", b: 500, m: "GET", d: "Environ 500 octets en moyenne : la ligne « GET /page HTTP/1.1 » suivie des en-têtes (Host, User-Agent, cookies…).", a: 1 },
+  { n: "Une trame Ethernet", b: 1500, m: "eth", d: "La charge maximale d'une trame Ethernet (MTU). Une page web est découpée en dizaines de morceaux de cette taille." },
+  { n: "Une page de roman", b: 2000, m: "¶", d: "Environ 2 000 caractères en texte brut, mise en page non comprise.", a: 1 },
+  { n: "Un QR code (version 40)", b: 2953, m: "QR", d: "Le plus grand QR code (177 × 177 modules) peut stocker 2 953 octets." },
+  { n: "Mémoire vive d'Apollo 11", b: 4096, m: "AGC", d: "L'ordinateur de guidage d'Apollo disposait de 2 048 mots de 16 bits de mémoire effaçable. Il a quand même posé des hommes sur la Lune." },
+  { n: "Programme d'Apollo 11", b: 73728, m: "ROM", d: "36 864 mots tissés à la main dans une mémoire à tores de ferrite (« core rope »)." },
+  { n: "Une disquette 3,5″", b: 1474560, m: "FD", d: "1 474 560 octets : on parle de « 1,44 Mo », un curieux mélange de 1 000 et de 1 024." },
+  { n: "Une page web moyenne", b: 2.6e6, m: "</>", d: "Le poids médian d'une page web sur ordinateur dans les années 2020 : surtout des images et du JavaScript.", a: 1 },
+  { n: "Une photo de smartphone", b: 3e6, m: "jpg", d: "Une photo de 12 mégapixels compressée en JPEG.", a: 1 },
+  { n: "Les Misérables (texte brut)", b: 3.2e6, m: "V.H.", d: "Environ 530 000 mots. Le roman entier pèse à peine plus qu'une photo.", a: 1 },
+  { n: "Une chanson en MP3", b: 5e6, m: "♪", d: "Environ 3 min 30 de musique compressée. Il faudrait 7 fois plus de place sans compression.", a: 1 },
+  { n: "Une image Full HD brute", b: 6220800, m: "RGB", d: "1920 × 1080 pixels × 3 octets (rouge, vert, bleu), sans compression : 6 220 800 octets." },
+  { n: "Un CD audio", b: 7e8, m: "CD", d: "Environ 80 minutes de musique non compressée." },
+  { n: "Un génome humain", b: 7.75e8, m: "ATCG", d: "3,1 milliards de paires de bases, chacune codée sur 2 bits (A, T, C ou G). Tu tiens à peu près sur un CD.", a: 1 },
+  { n: "Un DVD", b: 4.7e9, m: "DVD", d: "4,7 Go sur une seule couche. Assez pour un film en définition standard." },
+  { n: "1 h de vidéo 4K en streaming", b: 7e9, m: "▶", d: "L'ordre de grandeur annoncé par les plateformes de streaming pour une heure en Ultra HD.", a: 1 },
+  { n: "La RAM d'un PC (16 Gio)", b: 17179869184, m: "RAM", d: "Les barrettes mémoire se mesurent en puissances de 2 : 16 × 2³⁰ octets." },
+  { n: "Wikipédia en anglais", b: 2.4e10, m: "W", d: "Le texte de tous les articles, compressé, sans les images. Environ 7 millions d'articles.", a: 1 },
+  { n: "Un smartphone de 128 Go", b: 1.28e11, m: "▯", d: "La capacité de stockage d'un téléphone courant." },
+  { n: "Un SSD de 1 To", b: 1e12, m: "SSD", d: "Mille milliards d'octets. Le système d'exploitation l'affichera pourtant comme « 931 Go »." },
+  { n: "Les livres de la Bibliothèque du Congrès", b: 1e13, m: "LoC", d: "Estimation souvent citée pour le texte seul de toute la collection imprimée de la plus grande bibliothèque du monde.", a: 1 },
+  { n: "Un an de données du télescope James-Webb", b: 2.1e13, m: "JWST", d: "Le télescope envoie environ 57 Go par jour vers la Terre.", a: 1 },
+  { n: "Les données de l'image du trou noir M87*", b: 5e15, m: "●", d: "En 2019, l'Event Horizon Telescope a accumulé 5 Po de données brutes. Trop pour Internet : les disques ont voyagé par avion." },
+  { n: "1 gramme d'ADN (capacité)", b: 2.15e17, m: "DNA", d: "En 2017, des chercheurs ont estimé qu'un gramme d'ADN de synthèse pouvait stocker environ 215 Po.", a: 1 },
+  { n: "Les archives du CERN", b: 1e18, m: "LHC", d: "En 2023, le stockage du CERN a dépassé 1 exaoctet, surtout des collisions de particules du LHC.", a: 1 },
+  { n: "Le trafic Internet mondial d'une journée", b: 1.3e19, m: "www", d: "De l'ordre de 400 Eo par mois, soit environ 13 Eo par jour.", a: 1 },
+  { n: "Toutes les données créées en 2025", b: 1.8e23, m: "Σ", d: "Estimation du volume de données créées, copiées ou consommées dans le monde en un an : environ 180 zettaoctets.", a: 1 },
+];
+ITEMS.sort((x, y) => x.b - y.b);
+// Disposition : chaque objet est un carré posé sur une ligne, écarté du précédent proportionnellement à sa taille.
+ITEMS.forEach((it, i) => {
+  it.lg = Math.log10(it.b);
+  it.p = i === 0 ? 0 : ITEMS[i - 1].p + ITEMS[i - 1].b / 2 + 0.45 * it.b + it.b / 2;
+  it.seed = i * 9301 + 49297;
+});
+
+// ---------- Formats ----------
+const SI = ["o", "ko", "Mo", "Go", "To", "Po", "Eo", "Zo", "Yo"];
+const BI = ["o", "Kio", "Mio", "Gio", "Tio", "Pio", "Eio", "Zio", "Yio"];
+let binary = false;
+const nf = (v, d) => v.toLocaleString("fr-FR", { maximumFractionDigits: d, minimumFractionDigits: 0 });
+function fmtBytes(b, bin = binary) {
+  if (b < 1) { const bits = b * 8; return nf(bits, bits < 2 ? 1 : 0) + (bits < 2 ? " bit" : " bits"); }
+  const base = bin ? 1024 : 1000, u = bin ? BI : SI;
+  let k = Math.min(8, Math.floor(Math.log(b) / Math.log(base) + 1e-9));
+  const v = b / Math.pow(base, k);
+  if (k === 0) return nf(v, v < 10 ? 1 : 0) + (v < 2 ? " octet" : " octets");
+  return nf(v, v < 10 ? 2 : v < 100 ? 1 : 0) + " " + u[k];
+}
+function fmtCount(n) {
+  const T = [[1e18, "milliards de milliards"], [1e15, "millions de milliards"], [1e12, "mille milliards"], [1e9, "milliards"], [1e6, "millions"]];
+  for (const [t, w] of T) if (n >= t) return nf(n / t, n / t < 10 ? 1 : 0) + " " + w;
+  return nf(n, n < 10 ? 1 : 0);
+}
+const sup = (n) => `<sup>${n}</sup>`;
+
+// ---------- Thème ----------
+const css = {};
+function readTheme() {
+  const s = getComputedStyle(document.documentElement);
+  for (const k of ["paper", "ink", "ink-soft", "accent", "rule", "hl"]) css[k] = s.getPropertyValue("--" + k).trim();
+}
+readTheme();
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", readTheme);
+new MutationObserver(readTheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+// ---------- Scène ----------
+const cv = document.getElementById("scene"), ctx = cv.getContext("2d");
+let W = 0, H = 0, dpr = 1;
+function resize() {
+  dpr = Math.min(2, window.devicePixelRatio || 1);
+  W = cv.clientWidth; H = cv.clientHeight;
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+}
+addEventListener("resize", resize); resize();
+
+const MIN = -1.2, MAX = 24;
+let L = 0, target = 0, selected = null, playing = false;
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function cameraX(s) {
+  const n = ITEMS.length;
+  if (s <= ITEMS[0].b) return ITEMS[0].p;
+  if (s >= ITEMS[n - 1].b) return ITEMS[n - 1].p;
+  for (let i = 0; i < n - 1; i++) {
+    const a = ITEMS[i], b = ITEMS[i + 1];
+    if (s >= a.b && s < b.b) return a.p + (b.p - a.p) * (s - a.b) / (b.b - a.b);
+  }
+  return ITEMS[n - 1].p;
+}
+
+function rand(seed) { let x = Math.sin(seed) * 10000; return x - Math.floor(x); }
+const clampPx = (v) => Math.max(-20000, Math.min(20000, v));
+function inkLine(x1, y1, x2, y2, seed) {
+  const mx = (x1 + x2) / 2 + (rand(seed) - .5) * 2.4, my = (y1 + y2) / 2 + (rand(seed + 1) - .5) * 2.4;
+  ctx.moveTo(clampPx(x1 + (rand(seed + 2) - .5) * 1.6), clampPx(y1 + (rand(seed + 3) - .5) * 1.6));
+  ctx.quadraticCurveTo(clampPx(mx), clampPx(my), clampPx(x2), clampPx(y2));
+}
+function inkRect(x, y, w, h, seed) {
+  ctx.beginPath();
+  inkLine(x, y, x + w, y, seed); inkLine(x + w, y, x + w, y + h, seed + 7);
+  inkLine(x + w, y + h, x, y + h, seed + 13); inkLine(x, y + h, x, y, seed + 19);
+  ctx.stroke();
+}
+
+let layout = []; // pour le clic
+function draw() {
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = css.paper; ctx.fillRect(0, 0, W, H);
+
+  // grille de points du cahier
+  ctx.fillStyle = css.rule;
+  for (let gx = 12; gx < W; gx += 24) for (let gy = 12; gy < H; gy += 24) ctx.fillRect(gx, gy, 1.5, 1.5);
+
+  const s = Math.pow(10, L);
+  const unit = Math.min(H * 0.34, W * 0.55);
+  const ppb = unit / s; // pixels par octet
+  const ground = Math.round(H * 0.66);
+  const cx = cameraX(s);
+
+  // ligne de sol
+  ctx.strokeStyle = css.ink; ctx.lineWidth = 1.5; ctx.globalAlpha = .7;
+  ctx.beginPath(); inkLine(-10, ground, W + 10, ground, 3); ctx.stroke(); ctx.globalAlpha = 1;
+
+  layout = [];
+  for (let i = ITEMS.length - 1; i >= 0; i--) {
+    const it = ITEMS[i];
+    const w = it.b * ppb;
+    if (w < 2) continue;
+    const x0 = W / 2 + (it.p - cx) * ppb - w / 2;
+    if (x0 > W + 40 || x0 + w < -40) continue;
+    const aSmall = Math.min(1, (w - 2) / 12);
+    const aBig = Math.max(0, Math.min(1, 1 - (w - H) / (3 * H)));
+    const alpha = aSmall * aBig;
+    if (alpha <= 0.01) continue;
+    const y0 = ground - w;
+    layout.push({ it, x: x0, y: y0, w, alpha });
+
+    ctx.globalAlpha = alpha;
+    // surligneur si sélectionné
+    if (selected === it) {
+      ctx.fillStyle = css.hl; ctx.globalAlpha = alpha * .55;
+      ctx.fillRect(clampPx(x0 - 4), clampPx(y0 - 4), Math.min(w + 8, 40000), Math.min(w + 8, 40000));
+      ctx.globalAlpha = alpha;
+    }
+    // hachures (seulement sur la partie visible)
+    if (w > 18) {
+      const vx0 = Math.max(x0, 0), vx1 = Math.min(x0 + w, W), vy0 = Math.max(y0, 0), vy1 = ground;
+      if (vx1 > vx0 && vy1 > vy0) {
+        ctx.save(); ctx.beginPath(); ctx.rect(vx0, vy0, vx1 - vx0, vy1 - vy0); ctx.clip();
+        ctx.strokeStyle = css.ink; ctx.globalAlpha = alpha * .12; ctx.lineWidth = 1;
+        ctx.beginPath();
+        const step = 9;
+        const start = Math.floor((vx0 - (vy1 - vy0)) / step) * step;
+        for (let hx = start; hx < vx1; hx += step) { ctx.moveTo(hx, vy1); ctx.lineTo(hx + (vy1 - vy0), vy0); }
+        ctx.stroke(); ctx.restore(); ctx.globalAlpha = alpha;
+      }
+    }
+    // contour encre
+    ctx.strokeStyle = selected === it ? css.accent : css.ink;
+    ctx.lineWidth = w < 30 ? 1.2 : 2;
+    inkRect(x0, y0, w, w, it.seed);
+
+    // glyphe
+    const fs = Math.min(w * 0.3, 140);
+    if (fs > 7) {
+      ctx.fillStyle = css.ink; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.font = `700 ${fs}px Kalam, cursive`;
+      const gx = Math.max(Math.min(x0 + w / 2, W - fs), fs), gy = Math.max(y0 + w / 2, ground - Math.min(w, H) / 2);
+      ctx.fillText(it.m, x0 + w / 2 < W && x0 + w / 2 > 0 ? x0 + w / 2 : gx, gy);
+    }
+    // étiquette
+    const la = Math.max(0, Math.min(1, (w - 34) / 30)) * aBig;
+    if (la > 0.02) {
+      ctx.globalAlpha = la;
+      const lx = Math.max(70, Math.min(W - 70, x0 + w / 2));
+      ctx.textAlign = "center"; ctx.textBaseline = "top";
+      ctx.fillStyle = selected === it ? css.accent : css.ink;
+      ctx.font = `700 ${w > 120 ? 17 : 14}px Kalam, cursive`;
+      wrapText(it.n, lx, ground + 12, Math.max(110, Math.min(w + 20, 220)), w > 120 ? 19 : 16);
+      ctx.fillStyle = css["ink-soft"]; ctx.font = `400 12px "IBM Plex Mono", monospace`;
+      ctx.fillText((it.a ? "≈ " : "") + fmtBytes(it.b), lx, ground + 12 + linesUsed * (w > 120 ? 19 : 16) + 3);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  drawScaleBar(ppb, ground);
+}
+
+let linesUsed = 1;
+function wrapText(text, x, y, maxW, lh) {
+  const words = text.split(" "); let line = "", ly = y; linesUsed = 0;
+  for (const wd of words) {
+    const test = line ? line + " " + wd : wd;
+    if (ctx.measureText(test).width > maxW && line) { ctx.fillText(line, x, ly); ly += lh; linesUsed++; line = wd; }
+    else line = test;
+  }
+  ctx.fillText(line, x, ly); linesUsed++;
+}
+
+function drawScaleBar(ppb, ground) {
+  // choisit une puissance de 10 (ou de 2) dont la longueur tombe entre 60 et 220 px
+  const base = binary ? 2 : 10;
+  let k = Math.floor(Math.log(120 / ppb) / Math.log(base));
+  let val = Math.pow(base, k);
+  if (binary) { while (val * ppb < 60) val *= 2; }
+  const len = val * ppb;
+  const x = Math.max(16, W * 0.04), y = ground + 70 + (W < 640 ? 0 : 0);
+  if (y > H - 90) return;
+  ctx.strokeStyle = css.accent; ctx.lineWidth = 2; ctx.globalAlpha = .9;
+  ctx.beginPath(); inkLine(x, y, x + len, y, 5);
+  ctx.moveTo(x, y - 6); ctx.lineTo(x, y + 6); ctx.moveTo(x + len, y - 6); ctx.lineTo(x + len, y + 6); ctx.stroke();
+  ctx.fillStyle = css.accent; ctx.font = `700 15px Kalam, cursive`; ctx.textAlign = "left"; ctx.textBaseline = "bottom";
+  ctx.fillText("= " + fmtBytes(val), x, y - 8);
+  ctx.globalAlpha = 1;
+}
+
+// ---------- HUD ----------
+const $ = (id) => document.getElementById(id);
+const zoom = $("zoom"), readout = $("readout"), readoutSub = $("readoutSub");
+function updateHud() {
+  const s = Math.pow(10, L);
+  readout.textContent = fmtBytes(s);
+  const p10 = Math.round(L * 10) / 10, p2 = Math.round(Math.log2(s * 8));
+  readoutSub.innerHTML = `10${sup(nf(p10, 1))} octets · ≈ 2${sup(p2)} bits`;
+  zoom.value = L;
+  zoom.setAttribute("aria-valuetext", fmtBytes(s));
+}
+
+function setTarget(v) { target = Math.max(MIN, Math.min(MAX, v)); }
+
+// ---------- Fiche ----------
+function openCard(it) {
+  selected = it;
+  $("cardTitle").textContent = it.n;
+  const si = fmtBytes(it.b, false), bi = fmtBytes(it.b, true);
+  $("cardSize").innerHTML = (it.a ? "≈ " : "") + si + (si !== bi && it.b >= 1000 ? ` <small>(${bi})</small>` : "") +
+    `<br><small>${nf(it.b * 8, 0)} bits · ≈ 2${sup(nf(Math.log2(it.b * 8), 1))}</small>`;
+  $("cardDesc").textContent = it.d;
+  const phone = 1.28e11, n = phone / it.b;
+  let cmp;
+  if (Math.abs(n - 1) < 1e-9) cmp = "C'est l'étalon de comparaison : le smartphone que tu as peut-être dans la poche.";
+  else if (n > 1) cmp = `Un smartphone de 128 Go peut en contenir ${fmtCount(n)}.`;
+  else cmp = `Il faudrait ${fmtCount(1 / n)} smartphones de 128 Go pour tout stocker.`;
+  $("cardCmp").textContent = cmp;
+  $("card").hidden = false;
+}
+$("cardClose").addEventListener("click", () => { $("card").hidden = true; selected = null; });
+
+// ---------- Entrées ----------
+zoom.addEventListener("input", () => { setTarget(parseFloat(zoom.value)); stopPlay(); });
+cv.addEventListener("wheel", (e) => { e.preventDefault(); setTarget(target + e.deltaY * 0.0022); stopPlay(); }, { passive: false });
+
+let drag = null;
+cv.addEventListener("pointerdown", (e) => { drag = { x: e.clientX, y: e.clientY, t0: target, moved: false }; cv.setPointerCapture(e.pointerId); });
+cv.addEventListener("pointermove", (e) => {
+  if (!drag) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+  if (Math.abs(dx) + Math.abs(dy) > 5) { drag.moved = true; cv.classList.add("dragging"); stopPlay(); }
+  if (drag.moved) setTarget(drag.t0 + (-dx + dy) * 0.006);
+});
+cv.addEventListener("pointerup", (e) => {
+  cv.classList.remove("dragging");
+  if (drag && !drag.moved) {
+    const r = cv.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top;
+    const hits = layout.filter((o) => o.alpha > 0.3 && px >= o.x && px <= o.x + o.w && py >= o.y && py <= o.y + o.w);
+    hits.sort((a, b) => a.w - b.w);
+    if (hits.length) openCard(hits[0].it); else { $("card").hidden = true; selected = null; }
+  }
+  drag = null;
+});
+
+$("units").addEventListener("click", (e) => {
+  binary = !binary;
+  e.currentTarget.setAttribute("aria-pressed", binary);
+  e.currentTarget.textContent = binary ? "Kio → ko" : "ko → Kio";
+  if (selected) openCard(selected);
+});
+function stopPlay() { playing = false; $("play").setAttribute("aria-pressed", "false"); $("play").textContent = "▶ Voyage"; }
+$("play").addEventListener("click", () => {
+  if (playing) return stopPlay();
+  if (target >= MAX - 0.05) { setTarget(MIN); L = MIN; }
+  playing = true; $("play").setAttribute("aria-pressed", "true"); $("play").textContent = "❚❚ Pause";
+});
+
+// ---------- Boucle ----------
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  if (playing) { setTarget(target + dt * 0.55); if (target >= MAX) stopPlay(); }
+  L = reduced ? target : L + (target - L) * Math.min(1, dt * 8);
+  if (Math.abs(target - L) < 1e-4) L = target;
+  draw(); updateHud();
+  requestAnimationFrame(frame);
+}
+document.fonts && document.fonts.ready.then(() => draw());
+requestAnimationFrame(frame);
+</script>

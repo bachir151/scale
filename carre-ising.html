@@ -1,0 +1,517 @@
+<meta charset="utf-8">
+<title>Le carré d'Ising</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout : planche de cahier. En haut, le système et son espace des configurations côte à côte ; en dessous, trois carnets d'expériences (température, mesure, règle au niveau de M). */
+:root {
+  --paper: #f6f7f3;
+  --panel: #ffffff;
+  --ink: #1c2332;
+  --ink-soft: #5d6677;
+  --rule: #dfe3ea;
+  --accent: #1f5fbf;   /* encre bleue : état courant */
+  --warm: #c24a1c;     /* côtés opposés, énergie positive */
+  --hl: #f3d35b;       /* surligneur : probabilité */
+  --f-hand: "Kalam", "Segoe Print", cursive;
+  --f-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #131720; --panel: #1a1f2a; --ink: #e6e8ee; --ink-soft: #98a1b3; --rule: #2a313e;
+    --accent: #82b2ff; --warm: #f08a5d; --hl: #c9a233; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #131720; --panel: #1a1f2a; --ink: #e6e8ee; --ink-soft: #98a1b3; --rule: #2a313e;
+  --accent: #82b2ff; --warm: #f08a5d; --hl: #c9a233; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--paper); color: var(--ink); font-family: var(--f-ui); font-size: 15px; line-height: 1.5;
+  background-image: radial-gradient(var(--rule) 1.2px, transparent 1.2px); background-size: 24px 24px;
+}
+.wrap {
+  max-width: 1240px; margin: 0 auto;
+  padding-block: 28px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 22px;
+}
+header { display: flex; flex-direction: column; gap: 4px; max-width: 72ch; }
+.eyebrow { font: 500 .78rem var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); }
+h1 { font: 700 clamp(2rem, 5vw, 3rem)/1.05 var(--f-hand); margin: 0; text-wrap: balance; }
+.lede { margin: 4px 0 0; color: var(--ink-soft); }
+h2 { font: 700 1.3rem/1.2 var(--f-hand); margin: 0; }
+.mono, .num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+
+.grid-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.65fr); gap: 18px; }
+.grid-bot { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+@media (max-width: 980px) { .grid-top, .grid-bot { grid-template-columns: minmax(0, 1fr); } }
+
+.sheet {
+  background: var(--panel); border: 1.5px solid var(--ink); border-radius: 3px;
+  box-shadow: 4px 4px 0 var(--rule); padding: 16px 18px;
+  display: flex; flex-direction: column; gap: 12px; min-width: 0;
+}
+.sheet p { margin: 0; font-size: .9rem; }
+.note { color: var(--ink-soft); font-size: .86rem; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.between { justify-content: space-between; }
+
+svg { display: block; width: 100%; height: auto; max-width: 100%; }
+svg text { fill: var(--ink); }
+.spin { cursor: pointer; }
+.spin:focus-visible circle.hit { stroke: var(--accent); stroke-width: 2.5; }
+.vtx { cursor: pointer; }
+
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; }
+.stat { border-top: 1.5px dashed var(--rule); padding-top: 6px; display: flex; flex-direction: column; }
+.stat .k { font-size: .74rem; color: var(--ink-soft); letter-spacing: .03em; }
+.stat .v { font: 500 1.05rem var(--f-mono); font-variant-numeric: tabular-nums; }
+
+.btn {
+  font: 500 .84rem var(--f-ui); color: var(--ink); background: var(--panel);
+  border: 1.5px solid var(--ink); border-radius: 5px; padding: 5px 11px; cursor: pointer;
+}
+.btn[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
+.btn:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tabs { display: flex; gap: 0; border: 1.5px solid var(--ink); border-radius: 5px; overflow: hidden; width: fit-content; max-width: 100%; flex-wrap: wrap; }
+.tabs .btn { border: 0; border-radius: 0; border-right: 1.5px solid var(--ink); }
+.tabs .btn:last-child { border-right: 0; }
+
+input[type=range] { width: 100%; accent-color: var(--accent); }
+label.check { display: inline-flex; gap: 6px; align-items: center; font-size: .86rem; cursor: pointer; }
+
+.bars { display: flex; flex-direction: column; gap: 6px; }
+.bar { display: grid; grid-template-columns: 64px minmax(0, 1fr) 54px; gap: 8px; align-items: center; font-size: .8rem; }
+.bar .track { position: relative; height: 18px; border: 1px solid var(--rule); border-radius: 2px; }
+.bar .th { position: absolute; left: 0; top: 0; bottom: 0; background: var(--hl); opacity: .85; }
+.bar .em { position: absolute; left: 0; height: 4px; bottom: -1px; background: var(--accent); }
+.bar .lab { font-family: var(--f-mono); }
+.bar .pct { font-family: var(--f-mono); text-align: right; font-variant-numeric: tabular-nums; }
+
+table { border-collapse: collapse; width: 100%; font-size: .84rem; }
+th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--rule); font-variant-numeric: tabular-nums; }
+th { font-weight: 600; color: var(--ink-soft); font-size: .76rem; }
+td.mono { font-family: var(--f-mono); }
+.ok { color: var(--accent); font-weight: 600; }
+.ko { color: var(--warm); font-weight: 600; }
+tr.sel td { background: color-mix(in srgb, var(--hl) 30%, transparent); }
+.tblwrap { overflow-x: auto; }
+
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: .8rem; color: var(--ink-soft); }
+.legend span { display: inline-flex; gap: 6px; align-items: center; }
+.sw { width: 14px; height: 14px; border-radius: 50%; display: inline-block; border: 1.5px solid var(--ink); }
+.sw.p { background: var(--hl); }
+.sw.cur { border: 3px solid var(--accent); background: transparent; }
+.sw.fib { border: 2px dashed var(--warm); background: transparent; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Atlas des espaces d'états · planche 1</div>
+    <h1>Le carré d'Ising</h1>
+    <p class="lede">Quatre spins aux sommets d'un carré, chacun valant +1 ou −1. L'espace des configurations compte 2⁴ = 16 points. Retourner un spin revient à suivre une arête de l'hypercube Q₄.</p>
+  </header>
+
+  <div class="grid-top">
+    <section class="sheet" aria-labelledby="h-sys">
+      <div class="row between"><h2 id="h-sys">Le système</h2><span class="note">clique un spin pour le retourner</span></div>
+      <svg id="sys" viewBox="0 0 320 300" role="group" aria-label="Le carré de quatre spins"></svg>
+      <div class="stats">
+        <div class="stat"><span class="k">configuration</span><span class="v" id="sCfg"></span></div>
+        <div class="stat"><span class="k">énergie E</span><span class="v" id="sE"></span></div>
+        <div class="stat"><span class="k">aimantation M</span><span class="v" id="sM"></span></div>
+        <div class="stat"><span class="k">côtés alignés</span><span class="v" id="sA"></span></div>
+      </div>
+      <p class="note">E = −J Σ<sub>⟨ij⟩</sub> s<sub>i</sub>s<sub>j</sub> sur les quatre côtés, avec J = 1 et k<sub>B</sub> = 1. Côté plein : spins alignés (−J). Côté pointillé : spins opposés (+J).</p>
+    </section>
+
+    <section class="sheet" aria-labelledby="h-space">
+      <div class="row between">
+        <h2 id="h-space">L'espace des configurations</h2>
+        <div class="tabs" role="group" aria-label="Disposition">
+          <button class="btn" data-layout="cube" aria-pressed="true">Hypercube Q₄</button>
+          <button class="btn" data-layout="fib" aria-pressed="false">Fibres de M</button>
+          <button class="btn" data-layout="me" aria-pressed="false">Plan (M, E)</button>
+        </div>
+      </div>
+      <svg id="space" viewBox="0 0 600 480" role="group" aria-label="Les 16 configurations et les retournements d'un spin">
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--warm)"></path>
+          </marker>
+        </defs>
+        <g id="gAxes"></g><g id="gEdges"></g><g id="gTrail"></g><g id="gArrows"></g><g id="gVtx"></g>
+      </svg>
+      <div class="row between">
+        <div class="legend">
+          <span><i class="sw p"></i>probabilité de Boltzmann à T</span>
+          <span><i class="sw cur"></i>configuration actuelle</span>
+          <span><i class="sw fib"></i>fibre annoncée</span>
+        </div>
+        <div class="row">
+          <button class="btn" id="run" aria-pressed="false">▶ Marche de Metropolis</button>
+          <button class="btn" id="resetVisits">Effacer les visites</button>
+        </div>
+      </div>
+      <p class="note" id="layoutNote"></p>
+    </section>
+  </div>
+
+  <div class="grid-bot">
+    <section class="sheet" aria-labelledby="h-temp">
+      <h2 id="h-temp">Température</h2>
+      <div class="row between"><span class="mono" id="tVal"></span><label class="check"><input type="checkbox" id="tInf"> T = ∞</label></div>
+      <input type="range" id="tSlider" min="-1.4" max="1.7" step="0.01" value="0.3" aria-label="Température (échelle logarithmique)">
+      <div class="stats">
+        <div class="stat"><span class="k">H(X)</span><span class="v" id="tH"></span></div>
+        <div class="stat"><span class="k">⟨E⟩</span><span class="v" id="tE"></span></div>
+        <div class="stat"><span class="k">⟨|M|⟩</span><span class="v" id="tM"></span></div>
+        <div class="stat"><span class="k">Z</span><span class="v" id="tZ"></span></div>
+      </div>
+      <div class="bars" id="eBars"></div>
+      <p class="note">Barre jaune : P(E) théorique, p(x) ∝ e<sup>−E(x)/T</sup>. Trait bleu : fréquence observée par la marche de Metropolis. À T → 0, les deux états alignés dominent et H → 1 bit. À T = ∞, les 16 configurations sont équiprobables et H = 4 bits.</p>
+    </section>
+
+    <section class="sheet" aria-labelledby="h-meas">
+      <h2 id="h-meas">Annoncer l'aimantation</h2>
+      <div class="row" id="mButtons" role="group" aria-label="Valeur annoncée de M"></div>
+      <div class="stats">
+        <div class="stat"><span class="k">Ω(m)</span><span class="v" id="mOm"></span></div>
+        <div class="stat"><span class="k">S<sub>B</sub> = ln Ω</span><span class="v" id="mSB"></span></div>
+        <div class="stat"><span class="k">P(M = m)</span><span class="v" id="mP"></span></div>
+        <div class="stat"><span class="k">surprise −log₂ P</span><span class="v" id="mSurp"></span></div>
+        <div class="stat"><span class="k">H(X | M = m)</span><span class="v" id="mHc"></span></div>
+        <div class="stat"><span class="k">H(X) − H(X | M = m)</span><span class="v" id="mDH"></span></div>
+      </div>
+      <p class="note" id="mNote"></p>
+    </section>
+
+    <section class="sheet" aria-labelledby="h-rule">
+      <h2 id="h-rule">Une règle au niveau de M ?</h2>
+      <p>F retourne un spin choisi. On cherche g telle que m ∘ F = g ∘ m.</p>
+      <div class="row" id="fButtons" role="group" aria-label="Spin retourné par F"></div>
+      <div class="tblwrap">
+        <table>
+          <thead><tr><th>m</th><th>images m(F(x)), x dans la fibre</th><th>g ?</th><th>loi à T</th></tr></thead>
+          <tbody id="fTable"></tbody>
+        </table>
+      </div>
+      <label class="check"><input type="checkbox" id="showArrows" checked> montrer les flèches de F depuis la fibre annoncée</label>
+      <p class="note">Une ligne à deux images rend g impossible. Il reste une loi : à température donnée, l'aimantation évolue comme une chaîne aléatoire. Agréger une dynamique déterministe produit du hasard au niveau grossier.</p>
+    </section>
+  </div>
+</div>
+
+<script>
+// ---------- Modèle ----------
+const N = 16, SITES = 4;
+const EDGES_SQ = [[0, 1], [1, 2], [2, 3], [3, 0]];
+const spin = (x, i) => ((x >> i) & 1) ? 1 : -1;
+const energy = (x) => -EDGES_SQ.reduce((a, [i, j]) => a + spin(x, i) * spin(x, j), 0);
+const mag = (x) => [0, 1, 2, 3].reduce((a, i) => a + spin(x, i), 0);
+const aligned = (x) => EDGES_SQ.filter(([i, j]) => spin(x, i) === spin(x, j)).length;
+const cfgStr = (x) => "(" + [0, 1, 2, 3].map((i) => spin(x, i) > 0 ? "+" : "−").join(",") + ")";
+const SITE_NAMES = ["haut gauche", "haut droite", "bas droite", "bas gauche"];
+const ALL = [...Array(N).keys()];
+const E = ALL.map(energy), M = ALL.map(mag);
+const E_LEVELS = [-4, 0, 4], M_LEVELS = [4, 2, 0, -2, -4];
+
+let state = 15;           // (+,+,+,+)
+let T = Math.pow(10, 0.3), Tinf = false;
+let layout = "cube";
+let announced = 0;        // m annoncé (null = aucun)
+let fSite = 0;
+let visits = new Array(N).fill(0), totalVisits = 0;
+let trail = [];
+
+const fmt = (v, d = 3) => (Math.abs(v) < 1e-12 ? 0 : v).toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d });
+const sgn = (v) => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v);
+
+function probs() {
+  if (Tinf) return ALL.map(() => 1 / N);
+  const w = ALL.map((x) => Math.exp(-E[x] / T)); const Z = w.reduce((a, b) => a + b, 0);
+  return w.map((v) => v / Z);
+}
+function Zval() { return Tinf ? Infinity : ALL.reduce((a, x) => a + Math.exp(-E[x] / T), 0); }
+const H = (ps) => -ps.reduce((a, p) => a + (p > 0 ? p * Math.log2(p) : 0), 0);
+
+// ---------- Système (carré) ----------
+const NS = "http://www.w3.org/2000/svg";
+const el = (tag, attrs = {}, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
+const sys = document.getElementById("sys");
+const SP = [[70, 60], [250, 60], [250, 240], [70, 240]];
+const sysEdges = EDGES_SQ.map(([i, j]) => {
+  const g = el("g", {}, sys);
+  const line = el("line", { x1: SP[i][0], y1: SP[i][1], x2: SP[j][0], y2: SP[j][1], "stroke-width": 3, "stroke-linecap": "round" }, g);
+  const mx = (SP[i][0] + SP[j][0]) / 2, my = (SP[i][1] + SP[j][1]) / 2;
+  const dx = mx === 160 ? 0 : (mx < 160 ? -26 : 26), dy = my === 150 ? 0 : (my < 150 ? -16 : 22);
+  const t = el("text", { x: mx + dx, y: my + dy, "text-anchor": "middle", "dominant-baseline": "middle", "font-family": "IBM Plex Mono, monospace", "font-size": 13 }, g);
+  return { line, t };
+});
+const sysSpins = SP.map(([x, y], i) => {
+  const g = el("g", { class: "spin", tabindex: 0, role: "button" }, sys);
+  el("circle", { class: "hit", cx: x, cy: y, r: 30, fill: "var(--panel)", stroke: "var(--ink)", "stroke-width": 1.5 }, g);
+  const arrow = el("path", { "stroke-width": 3.5, "stroke-linecap": "round", "stroke-linejoin": "round", fill: "none" }, g);
+  const flip = () => { setState(state ^ (1 << i), true); };
+  g.addEventListener("click", flip);
+  g.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); flip(); } });
+  return { g, arrow, x, y };
+});
+el("text", { x: 160, y: 288, "text-anchor": "middle", "font-family": "Kalam, cursive", "font-size": 15, fill: "var(--ink-soft)" }, sys).textContent = "sites 0 → 3 dans le sens des aiguilles";
+
+function drawSystem() {
+  sysSpins.forEach((s, i) => {
+    const up = spin(state, i) > 0;
+    const d = up ? `M${s.x},${s.y + 17} L${s.x},${s.y - 17} M${s.x - 9},${s.y - 8} L${s.x},${s.y - 17} L${s.x + 9},${s.y - 8}`
+                 : `M${s.x},${s.y - 17} L${s.x},${s.y + 17} M${s.x - 9},${s.y + 8} L${s.x},${s.y + 17} L${s.x + 9},${s.y + 8}`;
+    s.arrow.setAttribute("d", d);
+    s.arrow.setAttribute("stroke", up ? "var(--accent)" : "var(--warm)");
+    s.g.setAttribute("aria-label", `Spin ${SITE_NAMES[i]} : ${up ? "+1" : "−1"}. Retourner.`);
+  });
+  sysEdges.forEach(({ line, t }, k) => {
+    const [i, j] = EDGES_SQ[k]; const al = spin(state, i) === spin(state, j);
+    line.setAttribute("stroke", al ? "var(--ink)" : "var(--warm)");
+    line.setAttribute("stroke-dasharray", al ? "none" : "7 7");
+    t.textContent = al ? "−J" : "+J";
+    t.setAttribute("fill", al ? "var(--ink)" : "var(--warm)");
+  });
+  document.getElementById("sCfg").textContent = cfgStr(state);
+  document.getElementById("sE").textContent = sgn(E[state]) + (E[state] ? "J" : "");
+  document.getElementById("sM").textContent = sgn(M[state]);
+  document.getElementById("sA").textContent = aligned(state) + " / 4";
+}
+
+// ---------- Espace des configurations ----------
+const space = document.getElementById("space");
+const gAxes = document.getElementById("gAxes"), gEdges = document.getElementById("gEdges"), gTrail = document.getElementById("gTrail"),
+      gArrows = document.getElementById("gArrows"), gVtx = document.getElementById("gVtx");
+const QEDGES = []; ALL.forEach((x) => { for (let i = 0; i < SITES; i++) { const y = x ^ (1 << i); if (y > x) QEDGES.push([x, y, i]); } });
+
+function layoutPositions(kind) {
+  const P = [];
+  if (kind === "cube") {
+    const R = 76, vs = [0, 1, 2, 3].map((k) => [Math.cos(k * Math.PI / 4 - Math.PI / 2) * R, Math.sin(k * Math.PI / 4 - Math.PI / 2) * R]);
+    ALL.forEach((x) => { let px = 300, py = 240; for (let i = 0; i < 4; i++) { px += spin(x, i) * vs[i][0]; py += spin(x, i) * vs[i][1]; } P[x] = [px, py]; });
+  } else if (kind === "fib") {
+    M_LEVELS.forEach((m, r) => {
+      const xs = ALL.filter((x) => M[x] === m); const sp = 78;
+      xs.forEach((x, k) => P[x] = [330 + (k - (xs.length - 1) / 2) * sp, 48 + r * 96]);
+    });
+  } else {
+    const groups = {};
+    ALL.forEach((x) => { const key = M[x] + "," + E[x]; (groups[key] = groups[key] || []).push(x); });
+    for (const key in groups) {
+      const [m, e] = key.split(",").map(Number), xs = groups[key];
+      const cx = 300 + m * 60, cy = 240 + e * 46;
+      const off = xs.length === 1 ? [[0, 0]] : xs.length === 2 ? [[-20, 0], [20, 0]] : [[-20, -20], [20, -20], [-20, 20], [20, 20]];
+      xs.forEach((x, k) => P[x] = [cx + off[k][0], cy + off[k][1]]);
+    }
+  }
+  return P;
+}
+let pos = layoutPositions("cube").map((p) => p.slice()), targetPos = layoutPositions("cube");
+
+const edgeEls = QEDGES.map(() => el("line", { "stroke-width": 1.4 }, gEdges));
+const vtxEls = ALL.map((x) => {
+  const g = el("g", { class: "vtx", tabindex: 0, role: "button", "aria-label": `Configuration ${cfgStr(x)}, E = ${E[x]}, M = ${M[x]}` }, gVtx);
+  const prob = el("circle", { r: 19, fill: "var(--hl)" }, g);
+  const ring = el("circle", { r: 19, fill: "none", stroke: "var(--ink)", "stroke-width": 1.5 }, g);
+  const fib = el("circle", { r: 24, fill: "none", stroke: "var(--warm)", "stroke-width": 2, "stroke-dasharray": "4 4" }, g);
+  const dots = [[-6, -6], [6, -6], [6, 6], [-6, 6]].map(([dx, dy], i) => el("circle", { cx: dx, cy: dy, r: 3.6, "stroke-width": 1.4 }, g));
+  dots.forEach((d, i) => { const up = spin(x, i) > 0; d.setAttribute("fill", up ? "var(--ink)" : "var(--panel)"); d.setAttribute("stroke", "var(--ink)"); });
+  const pick = () => setState(x, true);
+  g.addEventListener("click", pick);
+  g.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } });
+  return { g, prob, ring, fib };
+});
+
+const NOTES = {
+  cube: "Projection de Q₄ sur le plan : chaque sommet est une configuration (point plein = +1, creux = −1, rangés comme sur le carré), chaque arête un retournement. Les 4 arêtes bleues partent de l'état actuel.",
+  fib: "Le même graphe rangé par aimantation : 1 · 4 · 6 · 4 · 1 = C(4,k). Chaque ligne est une fibre de m. Un retournement change toujours M de ±2, donc les arêtes ne relient que des lignes voisines.",
+  me: "Deux résumés à la fois, M en abscisse et E en ordonnée. M = 0 se scinde : 4 configurations d'énergie 0 et 2 d'énergie +4. La somme des spins oublie qui est voisin de qui.",
+};
+function drawAxes() {
+  gAxes.innerHTML = "";
+  if (layout === "fib") {
+    M_LEVELS.forEach((m, r) => {
+      const om = ALL.filter((x) => M[x] === m).length;
+      const t = el("text", { x: 14, y: 48 + r * 96, "dominant-baseline": "middle", "font-family": "IBM Plex Mono, monospace", "font-size": 13, fill: "var(--ink-soft)" }, gAxes);
+      t.textContent = `M=${sgn(m)}`;
+      const t2 = el("text", { x: 14, y: 66 + r * 96, "dominant-baseline": "middle", "font-family": "Kalam, cursive", "font-size": 13, fill: "var(--ink-soft)" }, gAxes);
+      t2.textContent = `Ω = ${om}`;
+    });
+  } else if (layout === "me") {
+    const ax = { stroke: "var(--ink-soft)", "stroke-width": 1, "stroke-dasharray": "2 4" };
+    el("line", { x1: 40, y1: 452, x2: 580, y2: 452, ...ax }, gAxes);
+    el("line", { x1: 40, y1: 30, x2: 40, y2: 452, ...ax }, gAxes);
+    [-4, -2, 0, 2, 4].forEach((m) => { const t = el("text", { x: 300 + m * 60, y: 470, "text-anchor": "middle", "font-family": "IBM Plex Mono, monospace", "font-size": 12, fill: "var(--ink-soft)" }, gAxes); t.textContent = sgn(m); });
+    E_LEVELS.forEach((e) => { const t = el("text", { x: 32, y: 240 + e * 46, "text-anchor": "end", "dominant-baseline": "middle", "font-family": "IBM Plex Mono, monospace", "font-size": 12, fill: "var(--ink-soft)" }, gAxes); t.textContent = sgn(e); });
+    const tm = el("text", { x: 580, y: 444, "text-anchor": "end", "font-family": "Kalam, cursive", "font-size": 15, fill: "var(--ink-soft)" }, gAxes); tm.textContent = "M →";
+    const te = el("text", { x: 48, y: 28, "font-family": "Kalam, cursive", "font-size": 15, fill: "var(--ink-soft)" }, gAxes); te.textContent = "E ↓";
+  }
+  document.getElementById("layoutNote").textContent = NOTES[layout];
+}
+
+function drawSpace() {
+  const ps = probs(), pmax = Math.max(...ps);
+  QEDGES.forEach(([a, b], k) => {
+    const L = edgeEls[k], cur = a === state || b === state;
+    L.setAttribute("x1", pos[a][0]); L.setAttribute("y1", pos[a][1]); L.setAttribute("x2", pos[b][0]); L.setAttribute("y2", pos[b][1]);
+    L.setAttribute("stroke", cur ? "var(--accent)" : "var(--ink-soft)");
+    L.setAttribute("stroke-opacity", cur ? 0.95 : (layout === "me" ? 0.18 : 0.35));
+    L.setAttribute("stroke-width", cur ? 2.4 : 1.2);
+  });
+  ALL.forEach((x) => {
+    const v = vtxEls[x];
+    v.g.setAttribute("transform", `translate(${pos[x][0].toFixed(1)},${pos[x][1].toFixed(1)})`);
+    v.prob.setAttribute("fill-opacity", (0.06 + 0.9 * ps[x] / pmax).toFixed(3));
+    v.ring.setAttribute("stroke", x === state ? "var(--accent)" : "var(--ink)");
+    v.ring.setAttribute("stroke-width", x === state ? 4 : 1.5);
+    v.fib.setAttribute("visibility", announced !== null && M[x] === announced ? "visible" : "hidden");
+  });
+  // trace de la marche
+  gTrail.innerHTML = "";
+  trail.forEach(([a, b], k) => {
+    el("line", { x1: pos[a][0], y1: pos[a][1], x2: pos[b][0], y2: pos[b][1], stroke: "var(--accent)", "stroke-width": 5, "stroke-linecap": "round", "stroke-opacity": (0.08 + 0.4 * (k + 1) / trail.length).toFixed(2) }, gTrail);
+  });
+  // flèches de F
+  gArrows.innerHTML = "";
+  if (document.getElementById("showArrows").checked && announced !== null) {
+    ALL.filter((x) => M[x] === announced).forEach((x) => {
+      const y = x ^ (1 << fSite);
+      const [x1, y1] = pos[x], [x2, y2] = pos[y]; const dx = x2 - x1, dy = y2 - y1, d = Math.hypot(dx, dy) || 1;
+      const ux = dx / d, uy = dy / d, nx = -uy * 14, ny = ux * 14;
+      const sx = x1 + ux * 22, sy = y1 + uy * 22, ex = x2 - ux * 24, ey = y2 - uy * 24;
+      el("path", { d: `M${sx},${sy} Q${(sx + ex) / 2 + nx},${(sy + ey) / 2 + ny} ${ex},${ey}`, fill: "none", stroke: "var(--warm)", "stroke-width": 2, "marker-end": "url(#arr)" }, gArrows);
+    });
+  }
+}
+
+// ---------- Température ----------
+const tSlider = document.getElementById("tSlider"), tInfBox = document.getElementById("tInf");
+const eBars = document.getElementById("eBars");
+const barEls = E_LEVELS.map((e) => {
+  const row = document.createElement("div"); row.className = "bar";
+  const n = ALL.filter((x) => E[x] === e).length;
+  row.innerHTML = `<span class="lab">E=${sgn(e)} <span style="color:var(--ink-soft)">(${n})</span></span><span class="track"><span class="th"></span><span class="em"></span></span><span class="pct"></span>`;
+  eBars.appendChild(row);
+  return { th: row.querySelector(".th"), em: row.querySelector(".em"), pct: row.querySelector(".pct") };
+});
+function drawTemp() {
+  const ps = probs();
+  document.getElementById("tVal").textContent = Tinf ? "T = ∞   β = 0" : `T = ${fmt(T, 2)}   β = ${fmt(1 / T, 2)}`;
+  document.getElementById("tH").textContent = fmt(H(ps), 3) + " bit";
+  document.getElementById("tE").textContent = fmt(ALL.reduce((a, x) => a + ps[x] * E[x], 0), 2);
+  document.getElementById("tM").textContent = fmt(ALL.reduce((a, x) => a + ps[x] * Math.abs(M[x]), 0), 2);
+  const Z = Zval(); document.getElementById("tZ").textContent = isFinite(Z) ? (Z < 1e5 ? fmt(Z, 2) : Z.toExponential(2).replace(".", ",")) : "∞";
+  E_LEVELS.forEach((e, k) => {
+    const pe = ALL.filter((x) => E[x] === e).reduce((a, x) => a + ps[x], 0);
+    const fe = totalVisits ? ALL.filter((x) => E[x] === e).reduce((a, x) => a + visits[x], 0) / totalVisits : 0;
+    barEls[k].th.style.width = (pe * 100).toFixed(1) + "%";
+    barEls[k].em.style.width = (fe * 100).toFixed(1) + "%";
+    barEls[k].pct.textContent = fmt(pe * 100, 1) + " %";
+  });
+}
+tSlider.addEventListener("input", () => { T = Math.pow(10, parseFloat(tSlider.value)); if (Tinf) { Tinf = false; tInfBox.checked = false; } refresh(); });
+tInfBox.addEventListener("change", () => { Tinf = tInfBox.checked; refresh(); });
+
+// ---------- Mesure ----------
+const mButtons = document.getElementById("mButtons");
+const mBtnEls = [null, -4, -2, 0, 2, 4].map((m) => {
+  const b = document.createElement("button"); b.className = "btn"; b.textContent = m === null ? "aucune" : "M = " + sgn(m);
+  b.addEventListener("click", () => { announced = m; refresh(); });
+  mButtons.appendChild(b); return { b, m };
+});
+function drawMeasure() {
+  mBtnEls.forEach(({ b, m }) => b.setAttribute("aria-pressed", String(m === announced)));
+  const ids = ["mOm", "mSB", "mP", "mSurp", "mHc", "mDH"];
+  if (announced === null) { ids.forEach((i) => document.getElementById(i).textContent = "—"); document.getElementById("mNote").textContent = "Choisis une valeur de M pour voir la fibre correspondante et ce que l'annonce t'apprend."; return; }
+  const ps = probs(), fib = ALL.filter((x) => M[x] === announced);
+  const Pm = fib.reduce((a, x) => a + ps[x], 0);
+  const cond = fib.map((x) => ps[x] / Pm);
+  const Hx = H(ps), Hc = H(cond), dH = Hx - Hc;
+  const pM = M_LEVELS.map((m) => ALL.filter((x) => M[x] === m).reduce((a, x) => a + ps[x], 0));
+  document.getElementById("mOm").textContent = fib.length;
+  document.getElementById("mSB").textContent = fmt(Math.log(fib.length), 3);
+  document.getElementById("mP").textContent = Pm < 1e-4 ? Pm.toExponential(2).replace(".", ",") : fmt(Pm, 4);
+  document.getElementById("mSurp").textContent = fmt(-Math.log2(Pm), 3) + " bit";
+  document.getElementById("mHc").textContent = fmt(Hc, 3) + " bit";
+  const dEl = document.getElementById("mDH"); dEl.textContent = (dH < -1e-9 ? "−" : "") + fmt(Math.abs(dH), 3) + " bit";
+  dEl.style.color = dH < -1e-9 ? "var(--warm)" : "";
+  let note = `En moyenne sur les annonces possibles, l'information est I(X ; M) = H(M) = ${fmt(H(pM), 3)} bit, puisque M est une fonction de X.`;
+  if (dH < -1e-9) note = `Ici l'annonce augmente l'incertitude : à cette température, X était presque sûrement un état aligné, et apprendre M = ${sgn(announced)} ouvre ${fib.length} possibilités. ` + note;
+  else if (Tinf) note = `À T = ∞, surprise et réduction d'incertitude coïncident : log₂ 16 − log₂ Ω. ` + note;
+  document.getElementById("mNote").textContent = note;
+}
+
+// ---------- Règle au niveau de M ----------
+const fButtons = document.getElementById("fButtons");
+const fBtnEls = [0, 1, 2, 3].map((i) => {
+  const b = document.createElement("button"); b.className = "btn"; b.textContent = "F : " + SITE_NAMES[i];
+  b.addEventListener("click", () => { fSite = i; refresh(); }); fButtons.appendChild(b); return b;
+});
+function drawRule() {
+  fBtnEls.forEach((b, i) => b.setAttribute("aria-pressed", String(i === fSite)));
+  const ps = probs(); const tb = document.getElementById("fTable"); tb.innerHTML = "";
+  M_LEVELS.forEach((m) => {
+    const fib = ALL.filter((x) => M[x] === m); const Pm = fib.reduce((a, x) => a + ps[x], 0);
+    const img = {}; fib.forEach((x) => { const m2 = M[x ^ (1 << fSite)]; img[m2] = (img[m2] || 0) + ps[x] / Pm; });
+    const keys = Object.keys(img).map(Number).sort((a, b) => a - b);
+    const tr = document.createElement("tr"); if (m === announced) tr.className = "sel";
+    tr.innerHTML = `<td class="mono">${sgn(m)}</td><td class="mono">{ ${keys.map(sgn).join(", ")} }</td>` +
+      `<td>${keys.length === 1 ? '<span class="ok">oui</span>' : '<span class="ko">non</span>'}</td>` +
+      `<td class="mono">${keys.map((k) => sgn(k) + " : " + fmt(img[k] * 100, 0) + " %").join(" · ")}</td>`;
+    tb.appendChild(tr);
+  });
+}
+document.getElementById("showArrows").addEventListener("change", refresh);
+
+// ---------- Dispositions ----------
+document.querySelectorAll("[data-layout]").forEach((b) => b.addEventListener("click", () => {
+  layout = b.dataset.layout;
+  document.querySelectorAll("[data-layout]").forEach((o) => o.setAttribute("aria-pressed", String(o === b)));
+  targetPos = layoutPositions(layout); drawAxes();
+}));
+
+// ---------- Metropolis ----------
+let running = false, timer = null;
+function metropolisStep() {
+  const i = Math.floor(Math.random() * SITES), y = state ^ (1 << i);
+  const dE = E[y] - E[state];
+  const accept = Tinf || dE <= 0 || Math.random() < Math.exp(-dE / T);
+  if (accept) { trail.push([state, y]); if (trail.length > 8) trail.shift(); state = y; }
+  visits[state]++; totalVisits++;
+  refresh();
+}
+document.getElementById("run").addEventListener("click", (e) => {
+  running = !running; e.currentTarget.setAttribute("aria-pressed", String(running));
+  e.currentTarget.textContent = running ? "❚❚ Pause" : "▶ Marche de Metropolis";
+  clearInterval(timer); if (running) timer = setInterval(metropolisStep, 140);
+});
+document.getElementById("resetVisits").addEventListener("click", () => { visits.fill(0); totalVisits = 0; trail = []; refresh(); });
+
+// ---------- Orchestration ----------
+function setState(x, manual) { if (manual) trail = []; state = x; refresh(); }
+function refresh() { drawSystem(); drawSpace(); drawTemp(); drawMeasure(); drawRule(); }
+
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  let moving = false;
+  ALL.forEach((x) => {
+    for (let k = 0; k < 2; k++) {
+      const d = targetPos[x][k] - pos[x][k];
+      if (Math.abs(d) > 0.05) { pos[x][k] += reduced ? d : d * Math.min(1, dt * 7); moving = true; } else pos[x][k] = targetPos[x][k];
+    }
+  });
+  if (moving) drawSpace();
+  requestAnimationFrame(frame);
+}
+drawAxes(); refresh(); requestAnimationFrame(frame);
+</script>

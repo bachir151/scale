@@ -1,0 +1,1057 @@
+<meta charset="utf-8">
+<title>Atlas des espaces d'états</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout : cahier à points. Bandeau de planches numérotées (l'ordre suit la discussion), puis une planche à la fois : système à gauche, espace d'états à droite, carnet de lecture en dessous. */
+:root {
+  --paper: #f6f7f3;
+  --panel: #ffffff;
+  --ink: #1c2332;
+  --ink-soft: #5d6677;
+  --rule: #dfe3ea;
+  --accent: #1f5fbf;
+  --warm: #c24a1c;
+  --hl: #f3d35b;
+  --f-hand: "Kalam", "Segoe Print", cursive;
+  --f-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #131720; --panel: #1a1f2a; --ink: #e6e8ee; --ink-soft: #98a1b3; --rule: #2a313e;
+    --accent: #82b2ff; --warm: #f08a5d; --hl: #c9a233; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #131720; --panel: #1a1f2a; --ink: #e6e8ee; --ink-soft: #98a1b3; --rule: #2a313e;
+  --accent: #82b2ff; --warm: #f08a5d; --hl: #c9a233; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--paper); color: var(--ink); font-family: var(--f-ui); font-size: 15px; line-height: 1.5;
+  background-image: radial-gradient(var(--rule) 1.2px, transparent 1.2px); background-size: 24px 24px;
+}
+.wrap {
+  max-width: 1240px; margin: 0 auto; padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 22px;
+}
+header { display: flex; flex-direction: column; gap: 4px; max-width: 74ch; }
+.eyebrow { font: 500 .78rem var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); }
+h1 { font: 700 clamp(2rem, 5vw, 3rem)/1.05 var(--f-hand); margin: 0; text-wrap: balance; }
+h2 { font: 700 1.6rem/1.15 var(--f-hand); margin: 0; text-wrap: balance; }
+h3 { font: 700 1.15rem/1.2 var(--f-hand); margin: 0; }
+.lede { margin: 4px 0 0; color: var(--ink-soft); }
+
+nav.plates { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+nav.plates a {
+  display: flex; flex-direction: column; gap: 2px; text-decoration: none; color: var(--ink);
+  background: var(--panel); border: 1.5px solid var(--ink); border-radius: 3px; padding: 8px 10px;
+}
+nav.plates a .n { font: 500 .72rem var(--f-mono); color: var(--ink-soft); letter-spacing: .05em; }
+nav.plates a .t { font: 700 1.02rem/1.15 var(--f-hand); }
+nav.plates a[aria-current="page"] { background: var(--ink); color: var(--panel); }
+nav.plates a[aria-current="page"] .n { color: var(--panel); opacity: .75; }
+nav.plates a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.plate { display: flex; flex-direction: column; gap: 16px; }
+.plate-head { display: flex; flex-direction: column; gap: 4px; max-width: 78ch; }
+.plate-head p { margin: 0; color: var(--ink-soft); }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+@media (max-width: 900px) { .two { grid-template-columns: minmax(0, 1fr); } }
+.sheet {
+  background: var(--panel); border: 1.5px solid var(--ink); border-radius: 3px; box-shadow: 4px 4px 0 var(--rule);
+  padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0;
+}
+.sheet p { margin: 0; font-size: .9rem; }
+.note { color: var(--ink-soft); font-size: .86rem; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.between { justify-content: space-between; }
+canvas { display: block; width: 100%; max-width: 100%; touch-action: none; cursor: crosshair; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+.stat { border-top: 1.5px dashed var(--rule); padding-top: 6px; display: flex; flex-direction: column; min-width: 0; }
+.stat .k { font-size: .74rem; color: var(--ink-soft); }
+.stat .v { font: 500 1rem var(--f-mono); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.btn {
+  font: 500 .84rem var(--f-ui); color: var(--ink); background: var(--panel);
+  border: 1.5px solid var(--ink); border-radius: 5px; padding: 5px 11px; cursor: pointer;
+}
+.btn[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
+.btn:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+select { font: 500 .84rem var(--f-ui); color: var(--ink); background: var(--panel); border: 1.5px solid var(--ink); border-radius: 5px; padding: 4px 8px; }
+input[type=range] { accent-color: var(--accent); flex: 1; min-width: 120px; }
+label.ctl { display: inline-flex; gap: 8px; align-items: center; font-size: .86rem; flex-wrap: wrap; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.think { border-left: 3px solid var(--hl); padding-left: 12px; display: flex; flex-direction: column; gap: 6px; }
+.think p { font-size: .9rem; }
+.lamp { min-width: 96px; display: inline-flex; align-items: center; gap: 8px; }
+.lamp .bulb { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--ink); background: var(--panel); }
+.lamp[aria-pressed="true"] .bulb { background: var(--hl); }
+.lamp[aria-pressed="true"] { background: var(--panel); color: var(--ink); box-shadow: inset 0 0 0 2px var(--hl); }
+footer { color: var(--ink-soft); font-size: .84rem; }
+footer a { color: var(--accent); }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Atlas des espaces d'états</div>
+    <h1>Un point peut représenter bien plus qu'un lieu</h1>
+    <p class="lede">Chaque planche montre un système et l'espace de ses états. Manipule l'un et regarde le point bouger dans l'autre.</p>
+  </header>
+
+  <nav class="plates" aria-label="Planches">
+    <a href="https://claude.ai/artifact/BFxYbE4dhmAvjLoLCYMjPC" target="_blank" rel="noopener"><span class="n">PLANCHE 1 ↗</span><span class="t">Le carré d'Ising</span></a>
+    <a href="#tore" data-plate="tore"><span class="n">PLANCHE 2</span><span class="t">L'horloge et le tore</span></a>
+    <a href="#pendule" data-plate="pendule"><span class="n">PLANCHE 3</span><span class="t">Le pendule</span></a>
+    <a href="#lampes" data-plate="lampes"><span class="n">PLANCHE 4</span><span class="t">Trois lampes</span></a>
+    <a href="#bits" data-plate="bits"><span class="n">PLANCHE 5</span><span class="t">Quatre bits, deux géométries</span></a>
+    <a href="#droites" data-plate="droites"><span class="n">PLANCHE 6</span><span class="t">L'espace des droites</span></a>
+    <a href="#simplexe" data-plate="simplexe"><span class="n">PLANCHE 7</span><span class="t">Le simplexe des lois</span></a>
+    <a href="#concepts" data-plate="concepts"><span class="n">PLANCHE 8</span><span class="t">L'espace des concepts</span></a>
+  </nav>
+
+  <!-- ============ PLANCHE 2 : TORE ============ -->
+  <section class="plate" id="p-tore" hidden>
+    <div class="plate-head">
+      <h2>L'horloge et le tore</h2>
+      <p>Une aiguille vit sur un cercle S¹ : 359° et 1° y sont à 2° l'un de l'autre. Deux aiguilles indépendantes donnent un point du tore S¹ × S¹, dessiné ici déplié en carré dont on recolle les bords opposés.</p>
+    </div>
+    <div class="two">
+      <div class="sheet">
+        <div class="row between"><h3>Deux cadrans</h3><span class="note">tire une aiguille</span></div>
+        <canvas id="cvDials" style="aspect-ratio: 2 / 1.05"></canvas>
+        <div class="stats">
+          <div class="stat"><span class="k">A</span><span class="v" id="toA"></span></div>
+          <div class="stat"><span class="k">B</span><span class="v" id="toB"></span></div>
+          <div class="stat"><span class="k">écart sur le cercle</span><span class="v" id="toDc"></span></div>
+          <div class="stat"><span class="k">|A − B| naïf</span><span class="v" id="toDn"></span></div>
+        </div>
+      </div>
+      <div class="sheet">
+        <div class="row between"><h3>Le tore déplié</h3><span class="note">clique ou glisse dans le carré</span></div>
+        <canvas id="cvTorus" style="aspect-ratio: 1 / 1"></canvas>
+        <div class="row">
+          <button class="btn" id="toPlay" aria-pressed="false">▶ Faire tourner</button>
+          <label class="ctl">vitesse de B / vitesse de A
+            <select id="toRatio">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="1.5">3/2</option>
+              <option value="sqrt2" selected>√2</option>
+              <option value="phi">φ (nombre d'or)</option>
+            </select>
+          </label>
+          <button class="btn" id="toClear">Effacer la trace</button>
+        </div>
+      </div>
+    </div>
+    <div class="sheet think">
+      <h3>À observer</h3>
+      <p>Les flèches simples se recollent entre elles, les doubles aussi. Une trajectoire qui sort à droite revient à gauche : c'est un seul trait continu sur le tore.</p>
+      <p>Avec un rapport rationnel p/q, la trajectoire se referme. Avec √2 ou φ, elle ne repasse jamais par le même point et finit par remplir le carré. Une question arithmétique (le rapport est-il rationnel ?) devient une propriété géométrique (la courbe est-elle fermée ou dense ?).</p>
+    </div>
+  </section>
+
+  <!-- ============ PLANCHE 3 : PENDULE ============ -->
+  <section class="plate" id="p-pendule" hidden>
+    <div class="plate-head">
+      <h2>Le pendule</h2>
+      <p>Une photo donne l'angle θ, pas le sens du mouvement. L'état est le couple (θ, ω). L'angle vit sur un cercle et la vitesse sur une droite : l'espace des phases est le cylindre S¹ × ℝ, déroulé ici entre −π et π.</p>
+    </div>
+    <div class="two">
+      <div class="sheet">
+        <div class="row between"><h3>Le système</h3><span class="note">tire la masse</span></div>
+        <canvas id="cvPend" style="aspect-ratio: 1 / 0.9"></canvas>
+        <div class="stats">
+          <div class="stat"><span class="k">θ</span><span class="v" id="peT"></span></div>
+          <div class="stat"><span class="k">ω</span><span class="v" id="peW"></span></div>
+          <div class="stat"><span class="k">E = ω²/2 − cos θ</span><span class="v" id="peE"></span></div>
+          <div class="stat"><span class="k">régime</span><span class="v" id="peR"></span></div>
+        </div>
+      </div>
+      <div class="sheet">
+        <div class="row between"><h3>L'espace des phases (θ, ω)</h3><span class="note">clique pour choisir un état</span></div>
+        <canvas id="cvPhase" style="aspect-ratio: 1 / 0.9"></canvas>
+        <div class="row">
+          <button class="btn" id="pePlay" aria-pressed="true">❚❚ Pause</button>
+          <button class="btn" id="peFlip">Inverser ω (même photo)</button>
+          <button class="btn" data-pe="0.6,0">Petite oscillation</button>
+          <button class="btn" data-pe="3.1,0">Près du sommet</button>
+          <button class="btn" data-pe="0,2.3">Tour complet</button>
+        </div>
+        <label class="ctl">frottement γ <input type="range" id="peG" min="0" max="0.5" step="0.01" value="0"><span class="mono" id="peGv">0</span></label>
+      </div>
+    </div>
+    <div class="sheet think">
+      <h3>À observer</h3>
+      <p>Sans frottement, l'énergie se conserve : chaque trajectoire suit une courbe de niveau. Les courbes fermées sont des oscillations, celles qui traversent tout le cylindre sont des tours complets. La séparatrice, en orange, les sépare et passe par l'équilibre instable θ = ±π.</p>
+      <p>Le bouton « Inverser ω » garde la même photo et change le film : le point passe de l'autre côté de l'axe θ. Avec du frottement, les courbes ne se referment plus et le point spirale vers (0, 0). Il franchit alors une à une les courbes de niveau.</p>
+    </div>
+  </section>
+
+  <!-- ============ PLANCHE 4 : LAMPES ============ -->
+  <section class="plate" id="p-lampes" hidden>
+    <div class="plate-head">
+      <h2>Trois lampes</h2>
+      <p>Trois lampes allumées ou éteintes donnent 2³ = 8 configurations. Si l'on actionne un interrupteur par pas, elles se rangent sur les sommets d'un cube, et la distance compte les lampes qui diffèrent.</p>
+    </div>
+    <div class="two">
+      <div class="sheet">
+        <h3>Les interrupteurs</h3>
+        <div class="row" id="laButtons"></div>
+        <div class="stats">
+          <div class="stat"><span class="k">état</span><span class="v" id="laS"></span></div>
+          <div class="stat"><span class="k">cible</span><span class="v" id="laT"></span></div>
+          <div class="stat"><span class="k">distance de Hamming</span><span class="v" id="laD"></span></div>
+          <div class="stat"><span class="k">plus courts chemins</span><span class="v" id="laN"></span></div>
+        </div>
+        <div class="row"><button class="btn" id="laGo">Parcourir un plus court chemin</button></div>
+        <p class="note">Clique un sommet du cube pour choisir une cible. Les arêtes orange forment le sous-cube qui contient tous les plus courts chemins.</p>
+      </div>
+      <div class="sheet">
+        <h3>Le cube Q₃</h3>
+        <canvas id="cvCube" style="aspect-ratio: 1.2 / 1"></canvas>
+      </div>
+    </div>
+    <div class="sheet think">
+      <h3>À observer</h3>
+      <p>À distance d, il y a exactement d! plus courts chemins : on choisit l'ordre dans lequel actionner les d interrupteurs concernés. Ces chemins remplissent un sous-cube de dimension d.</p>
+      <p>Avec n lampes, on obtient l'hypercube Qₙ. Le carré d'Ising de la planche 1 est Q₄ avec une énergie posée sur chaque sommet : même graphe, autre physique.</p>
+    </div>
+  </section>
+
+  <!-- ============ PLANCHE 5 : BITS ============ -->
+  <section class="plate" id="p-bits" hidden>
+    <div class="plate-head">
+      <h2>Quatre bits, deux géométries</h2>
+      <p>Les mêmes 16 mots de quatre bits portent deux distances. Lus comme des entiers, 0111 et 1000 valent 7 et 8 : distance 1. Avec la règle « retourner un bit par pas », ils diffèrent partout : distance 4.</p>
+    </div>
+    <div class="sheet">
+      <div class="row between">
+        <h3>La droite des entiers</h3>
+        <div class="row">
+          <button class="btn" data-code="bin" aria-pressed="true">Code binaire</button>
+          <button class="btn" data-code="gray" aria-pressed="false">Code de Gray</button>
+          <button class="btn" id="biPreset">7 et 8</button>
+        </div>
+      </div>
+      <canvas id="cvLine" style="aspect-ratio: 4.6 / 1"></canvas>
+      <p class="note">Clique deux points (sur la droite ou sur l'hypercube) pour choisir A puis B.</p>
+    </div>
+    <div class="two">
+      <div class="sheet">
+        <h3>L'hypercube Q₄</h3>
+        <canvas id="cvQ4" style="aspect-ratio: 1.15 / 1"></canvas>
+        <p class="note">Le trait bleu relie les mots dans l'ordre des entiers 0 → 15. Les sauts en orange ne sont pas des arêtes : ils retournent plusieurs bits d'un coup.</p>
+      </div>
+      <div class="sheet">
+        <h3>Mesures</h3>
+        <div class="stats">
+          <div class="stat"><span class="k">A</span><span class="v" id="biA"></span></div>
+          <div class="stat"><span class="k">B</span><span class="v" id="biB"></span></div>
+          <div class="stat"><span class="k">|a − b| (droite)</span><span class="v" id="biDl"></span></div>
+          <div class="stat"><span class="k">d<sub>H</sub> (hypercube)</span><span class="v" id="biDh"></span></div>
+          <div class="stat"><span class="k">longueur du chemin 0 → 15 sur Q₄</span><span class="v" id="biLen"></span></div>
+          <div class="stat"><span class="k">plus grand saut</span><span class="v" id="biMax"></span></div>
+        </div>
+        <div class="think">
+          <p>Aucune des deux géométries n'est la vraie. Chacune répond à une question : « combien d'unités les séparent ? » ou « combien de bits faut-il changer ? ».</p>
+          <p>Le code de Gray est un troisième choix de représentation qui les réconcilie : deux entiers voisins ne diffèrent plus que d'un bit, et le chemin 0 → 15 devient un chemin hamiltonien de Q₄. Les compteurs mécaniques et les codeurs rotatifs l'utilisent pour éviter les lectures fausses pendant une transition.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PLANCHE 6 : DROITES ============ -->
+  <section class="plate" id="p-droites" hidden>
+    <div class="plate-head">
+      <h2>L'espace des droites</h2>
+      <p>La droite y = mx + b est un point (m, b). Réciproquement, un point fixé P du plan devient une droite de l'espace des paramètres : toutes les droites qui passent par P vérifient b = y<sub>P</sub> − m x<sub>P</sub>.</p>
+    </div>
+    <div class="two">
+      <div class="sheet">
+        <div class="row between"><h3>Le plan (x, y)</h3><span class="note">déplace P et Q</span></div>
+        <canvas id="cvXY" style="aspect-ratio: 1 / 1"></canvas>
+      </div>
+      <div class="sheet">
+        <div class="row between"><h3>L'espace des paramètres (m, b)</h3><span class="note">déplace le point D</span></div>
+        <canvas id="cvMB" style="aspect-ratio: 1 / 1"></canvas>
+      </div>
+    </div>
+    <div class="sheet">
+      <div class="stats">
+        <div class="stat"><span class="k">P</span><span class="v" id="drP"></span></div>
+        <div class="stat"><span class="k">Q</span><span class="v" id="drQ"></span></div>
+        <div class="stat"><span class="k">droite (PQ)</span><span class="v" id="drPQ"></span></div>
+        <div class="stat"><span class="k">droite D</span><span class="v" id="drD"></span></div>
+      </div>
+      <div class="think">
+        <p>Les droites duales de P et Q se coupent en un seul point : l'unique droite qui passe par P et Q. « Deux points déterminent une droite » devient « deux droites se coupent en un point ».</p>
+        <p>Place P et Q à la même abscisse : les deux duales deviennent parallèles et la droite (PQ), verticale, n'a pas de coordonnées (m, b). Pour que la dualité soit parfaite, il faut ajouter des points à l'infini, et l'on arrive au plan projectif.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PLANCHE 7 : SIMPLEXE ============ -->
+  <section class="plate" id="p-simplexe" hidden>
+    <div class="plate-head">
+      <h2>Le simplexe des lois</h2>
+      <p>Une loi sur trois issues est un triplet (p₁, p₂, p₃) positif de somme 1. Ces triplets remplissent un triangle : les sommets sont les certitudes, le centre l'équiprobabilité. Les bandes de couleur sont les niveaux de l'entropie de Shannon.</p>
+    </div>
+    <div class="two">
+      <div class="sheet">
+        <div class="row between"><h3>Le triangle</h3><span class="note">déplace le point</span></div>
+        <canvas id="cvSimplex" style="aspect-ratio: 1.1 / 1"></canvas>
+      </div>
+      <div class="sheet">
+        <h3>La loi choisie</h3>
+        <div class="stats">
+          <div class="stat"><span class="k">p₁</span><span class="v" id="siP1"></span></div>
+          <div class="stat"><span class="k">p₂</span><span class="v" id="siP2"></span></div>
+          <div class="stat"><span class="k">p₃</span><span class="v" id="siP3"></span></div>
+          <div class="stat"><span class="k">H</span><span class="v" id="siH"></span></div>
+        </div>
+        <h3>Une famille de Boltzmann</h3>
+        <p class="note">Donne une énergie à chaque issue : E₁ = 0, E₂ et E₃ réglables. Quand β = 1/T varie, la loi pᵢ ∝ e<sup>−βEᵢ</sup> décrit une courbe dans le triangle.</p>
+        <label class="ctl">E₂ <input type="range" id="siE2" min="0" max="3" step="0.05" value="1"><span class="mono" id="siE2v"></span></label>
+        <label class="ctl">E₃ <input type="range" id="siE3" min="0" max="3" step="0.05" value="2"><span class="mono" id="siE3v"></span></label>
+        <label class="ctl"><input type="checkbox" id="siFollow" checked> placer le point sur la courbe</label>
+        <label class="ctl">β <input type="range" id="siB" min="-6" max="6" step="0.02" value="1"><span class="mono" id="siBv"></span></label>
+        <div class="think">
+          <p>À β → +∞ (T → 0⁺), la loi file vers le sommet d'énergie minimale. À β = 0 (T = ∞), elle est au centre. Aux β négatifs (pointillés), on obtient les « températures négatives », qui mènent vers le sommet d'énergie maximale.</p>
+          <p>Parmi les lois de même énergie moyenne, celle de Boltzmann maximise H. La courbe joint, pour chaque énergie moyenne, les points d'entropie maximale.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PLANCHE 8 : CONCEPTS ============ -->
+  <section class="plate" id="p-concepts" hidden>
+    <div class="plate-head">
+      <h2>L'espace des concepts</h2>
+      <p>Pour Peter Gärdenfors, un concept est une région d'un espace de qualités, dont les dimensions se perçoivent : teinte, luminosité, timbre… On pose un prototype par mot et on range chaque point avec le prototype le plus proche. L'espace se découpe alors en cellules de Voronoï, et ces cellules sont toujours convexes.</p>
+    </div>
+    <div class="row">
+      <div class="tabs" role="group" aria-label="Domaine" style="display:flex;border:1.5px solid var(--ink);border-radius:5px;overflow:hidden">
+        <button class="btn" data-dom="color" aria-pressed="true" style="border:0;border-radius:0;border-right:1.5px solid var(--ink)">Couleurs</button>
+        <button class="btn" data-dom="vowel" aria-pressed="false" style="border:0;border-radius:0">Voyelles</button>
+      </div>
+    </div>
+    <div class="two">
+      <div class="sheet">
+        <div class="row between"><h3 id="coTitle">Tranche de l'espace OKLab</h3><span class="note">glisse un prototype · clique ailleurs pour un échantillon</span></div>
+        <canvas id="cvConcept" style="aspect-ratio: 1 / 1"></canvas>
+        <div class="row" id="coColorCtl">
+          <label class="ctl">luminosité L <input type="range" id="coL" min="0.05" max="0.98" step="0.005" value="0.65"><span class="mono" id="coLv"></span></label>
+          <label class="ctl">poids de L <input type="range" id="coW" min="0" max="4" step="0.05" value="1"><span class="mono" id="coWv"></span></label>
+          <button class="btn" id="coMode" aria-pressed="false">Montrer les catégories</button>
+        </div>
+        <div class="row" id="coVowelCtl" hidden>
+          <label class="ctl"><input type="checkbox" id="coSound" checked> jouer la voyelle au clic</label>
+          <span class="note">Formants moyens approximatifs, voix d'homme.</span>
+        </div>
+      </div>
+      <div class="sheet">
+        <h3>Entre deux prototypes</h3>
+        <div class="row">
+          <label class="ctl">de <select id="coA"></select></label>
+          <label class="ctl">à <select id="coB"></select></label>
+        </div>
+        <canvas id="cvStrip" style="aspect-ratio: 6 / 1.1; cursor: default"></canvas>
+        <p class="note">Le segment entre les deux prototypes traverse une suite de catégories. Chacune n'y apparaît qu'une fois, en un seul morceau : c'est la convexité.</p>
+        <h3>L'échantillon</h3>
+        <div class="stats">
+          <div class="stat"><span class="k">catégorie</span><span class="v" id="coCat">—</span></div>
+          <div class="stat"><span class="k">coordonnées</span><span class="v" id="coXY">—</span></div>
+          <div class="stat"><span class="k">plus proche</span><span class="v" id="coN1">—</span></div>
+          <div class="stat"><span class="k">suivant</span><span class="v" id="coN2">—</span></div>
+        </div>
+        <p class="note" id="coMargin"></p>
+      </div>
+    </div>
+    <div class="sheet think">
+      <h3>À observer</h3>
+      <p id="coThink1"></p>
+      <p id="coThink2"></p>
+      <p>Le lien avec les embeddings est direct. Un modèle de langue range aussi ses mots dans un espace où la proximité compte, mais avec des centaines de dimensions apprises que personne n'a nommées. Gärdenfors part de dimensions perçues, l'apprentissage les invente. On peut alors se demander lesquelles retrouvent la teinte ou la luminosité.</p>
+    </div>
+  </section>
+
+  <footer>Planche 1 dans une page à part : <a href="https://claude.ai/artifact/BFxYbE4dhmAvjLoLCYMjPC" target="_blank" rel="noopener">Le carré d'Ising</a>. Les planches suivent l'ordre de la discussion « Espaces, états et émergence ».</footer>
+</div>
+
+<script>
+// ================= Outils communs =================
+const $ = (id) => document.getElementById(id);
+const TAU = Math.PI * 2;
+const C = {};
+function readTheme() {
+  const s = getComputedStyle(document.documentElement);
+  for (const k of ["paper", "panel", "ink", "ink-soft", "rule", "accent", "warm", "hl"]) C[k] = s.getPropertyValue("--" + k).trim();
+  themeVersion++;
+}
+let themeVersion = 0;
+readTheme();
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", readTheme);
+new MutationObserver(readTheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+function fit(cv) {
+  const w = cv.clientWidth, h = cv.clientHeight, d = Math.min(2, window.devicePixelRatio || 1);
+  if (cv._w !== w || cv._h !== h || cv._d !== d) { cv.width = Math.max(1, Math.round(w * d)); cv.height = Math.max(1, Math.round(h * d)); cv._w = w; cv._h = h; cv._d = d; cv._resized = true; }
+  const ctx = cv.getContext("2d"); ctx.setTransform(d, 0, 0, d, 0, 0);
+  ctx.fillStyle = C.panel; ctx.fillRect(0, 0, w, h);
+  return { ctx, w, h, d };
+}
+function ptr(cv, e) { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
+function onDrag(cv, { down, move, up }) {
+  cv.addEventListener("pointerdown", (e) => { const [x, y] = ptr(cv, e); if (down && down(x, y) === false) return; cv._drag = true; cv.setPointerCapture(e.pointerId); e.preventDefault(); });
+  cv.addEventListener("pointermove", (e) => { if (cv._drag && move) { const [x, y] = ptr(cv, e); move(x, y); } });
+  const end = () => { if (cv._drag) { cv._drag = false; up && up(); } };
+  cv.addEventListener("pointerup", end); cv.addEventListener("pointercancel", end);
+}
+const HAND = (s = 15) => `700 ${s}px Kalam, cursive`;
+const MONO = (s = 12) => `${s}px "IBM Plex Mono", monospace`;
+function text(ctx, t, x, y, { font = MONO(), color = C.ink, align = "center", base = "middle" } = {}) {
+  ctx.font = font; ctx.fillStyle = color; ctx.textAlign = align; ctx.textBaseline = base; ctx.fillText(t, x, y);
+}
+function dot(ctx, x, y, r, fill, stroke, lw = 1.5) {
+  ctx.beginPath(); ctx.arc(x, y, r, 0, TAU);
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.stroke(); }
+}
+function line(ctx, x1, y1, x2, y2, color, lw = 1.5, dash = null) {
+  ctx.beginPath(); ctx.setLineDash(dash || []); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+  ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.stroke(); ctx.setLineDash([]);
+}
+function arrowHead(ctx, x, y, ang, size, color) {
+  ctx.beginPath(); ctx.moveTo(x, y);
+  ctx.lineTo(x - size * Math.cos(ang - 0.45), y - size * Math.sin(ang - 0.45));
+  ctx.moveTo(x, y); ctx.lineTo(x - size * Math.cos(ang + 0.45), y - size * Math.sin(ang + 0.45));
+  ctx.strokeStyle = color; ctx.lineWidth = 1.8; ctx.stroke();
+}
+const nf = (v, d = 2) => (Math.abs(v) < 5e-13 ? 0 : v).toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d });
+const mod = (a, n) => ((a % n) + n) % n;
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const hexRgb = (h) => { h = h.replace("#", ""); if (h.length === 3) h = h.split("").map((c) => c + c).join(""); const n = parseInt(h, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+const popcount = (x) => { let c = 0; while (x) { c += x & 1; x >>= 1; } return c; };
+const bits = (x, n) => x.toString(2).padStart(n, "0");
+
+// ================= Planche 2 : tore =================
+const TO = {
+  a: 30, b: 300, trail: [[30, 300]], play: false, ratio: Math.SQRT2,
+  dialGeom(w, h) { const R = Math.min(w * 0.19, h * 0.36); return [[w * 0.27, h * 0.5, R], [w * 0.73, h * 0.5, R]]; },
+  torusGeom(w, h) { const m = 40, S = Math.min(w, h) - 2 * m; return { x0: (w - S) / 2, y0: (h - S) / 2, S }; },
+  push() { this.trail.push([this.a, this.b]); if (this.trail.length > 8000) this.trail.shift(); },
+  init() {
+    const cvD = $("cvDials"), cvT = $("cvTorus");
+    let which = 0;
+    onDrag(cvD, {
+      down: (x, y) => { which = x < cvD.clientWidth / 2 ? 0 : 1; this.setDial(which, x, y); },
+      move: (x, y) => this.setDial(which, x, y),
+    });
+    const setT = (x, y) => {
+      const g = this.torusGeom(cvT.clientWidth, cvT.clientHeight);
+      const a = mod((x - g.x0) / g.S * 360, 360), b = mod((1 - (y - g.y0) / g.S) * 360, 360);
+      this.a = a; this.b = b; this.push();
+    };
+    onDrag(cvT, { down: (x, y) => { this.trail.push(null); setT(x, y); }, move: setT });
+    $("toPlay").addEventListener("click", (e) => { this.play = !this.play; e.currentTarget.setAttribute("aria-pressed", this.play); e.currentTarget.textContent = this.play ? "❚❚ Pause" : "▶ Faire tourner"; });
+    $("toRatio").addEventListener("change", (e) => { const v = e.target.value; this.ratio = v === "sqrt2" ? Math.SQRT2 : v === "phi" ? (1 + Math.sqrt(5)) / 2 : parseFloat(v); this.trail = [[this.a, this.b]]; });
+    $("toClear").addEventListener("click", () => { this.trail = [[this.a, this.b]]; });
+  },
+  setDial(i, x, y) {
+    const cv = $("cvDials"); const [cx, cy] = this.dialGeom(cv.clientWidth, cv.clientHeight)[i];
+    const ang = mod(Math.atan2(x - cx, -(y - cy)) * 180 / Math.PI, 360);
+    if (i === 0) this.a = ang; else this.b = ang; this.push();
+  },
+  frame(dt) {
+    if (this.play) { this.a = mod(this.a + 40 * dt, 360); this.b = mod(this.b + 40 * this.ratio * dt, 360); this.push(); }
+    // cadrans
+    { const { ctx, w, h } = fit($("cvDials"));
+      this.dialGeom(w, h).forEach(([cx, cy, R], i) => {
+        const ang = (i === 0 ? this.a : this.b) * Math.PI / 180;
+        dot(ctx, cx, cy, R, null, C.ink, 2);
+        for (let k = 0; k < 12; k++) { const t = k * TAU / 12; line(ctx, cx + Math.sin(t) * R * 0.86, cy - Math.cos(t) * R * 0.86, cx + Math.sin(t) * R, cy - Math.cos(t) * R, C["ink-soft"], k % 3 ? 1 : 2); }
+        const col = i === 0 ? C.accent : C.warm;
+        line(ctx, cx, cy, cx + Math.sin(ang) * R * 0.8, cy - Math.cos(ang) * R * 0.8, col, 3.5);
+        dot(ctx, cx, cy, 4, C.ink);
+        text(ctx, i === 0 ? "A" : "B", cx, cy - R - 14, { font: HAND(17), color: col });
+        text(ctx, nf(i === 0 ? this.a : this.b, 0) + "°", cx, cy + R + 16, { font: MONO(13), color: C.ink });
+      });
+    }
+    // tore
+    { const { ctx, w, h } = fit($("cvTorus")); const g = this.torusGeom(w, h);
+      const X = (a) => g.x0 + a / 360 * g.S, Y = (b) => g.y0 + (1 - b / 360) * g.S;
+      for (let k = 1; k < 4; k++) { line(ctx, X(k * 90), g.y0, X(k * 90), g.y0 + g.S, C.rule, 1); line(ctx, g.x0, Y(k * 90), g.x0 + g.S, Y(k * 90), C.rule, 1); }
+      ctx.strokeStyle = C.ink; ctx.lineWidth = 1.8; ctx.strokeRect(g.x0, g.y0, g.S, g.S);
+      // marques de recollement
+      const mx = g.x0 + g.S / 2, my = g.y0 + g.S / 2;
+      arrowHead(ctx, mx + 7, g.y0, 0, 10, C.accent); arrowHead(ctx, mx + 7, g.y0 + g.S, 0, 10, C.accent);
+      [g.x0, g.x0 + g.S].forEach((x) => { arrowHead(ctx, x, my - 2, -Math.PI / 2, 10, C.warm); arrowHead(ctx, x, my - 12, -Math.PI / 2, 10, C.warm); });
+      text(ctx, "A →", g.x0 + g.S, g.y0 + g.S + 22, { font: HAND(15), color: C.accent, align: "right" });
+      text(ctx, "0°", g.x0, g.y0 + g.S + 22, { font: MONO(11), color: C["ink-soft"], align: "left" });
+      text(ctx, "B ↑", g.x0 - 8, g.y0 - 16, { font: HAND(15), color: C.warm, align: "left" });
+      text(ctx, "360°", g.x0 + g.S, g.y0 - 14, { font: MONO(11), color: C["ink-soft"], align: "right" });
+      // trace
+      ctx.save(); ctx.beginPath(); ctx.rect(g.x0, g.y0, g.S, g.S); ctx.clip();
+      ctx.beginPath(); let prev = null;
+      for (const p of this.trail) {
+        if (!p) { prev = null; continue; }
+        if (!prev || Math.abs(p[0] - prev[0]) > 180 || Math.abs(p[1] - prev[1]) > 180) ctx.moveTo(X(p[0]), Y(p[1])); else ctx.lineTo(X(p[0]), Y(p[1]));
+        prev = p;
+      }
+      ctx.strokeStyle = C.ink; ctx.globalAlpha = 0.55; ctx.lineWidth = 1.3; ctx.stroke(); ctx.globalAlpha = 1; ctx.restore();
+      dot(ctx, X(this.a), Y(this.b), 7, C.hl, C.ink, 2);
+    }
+    const dn = Math.abs(this.a - this.b), dc = Math.min(dn, 360 - dn);
+    $("toA").textContent = nf(this.a, 0) + "°"; $("toB").textContent = nf(this.b, 0) + "°";
+    $("toDc").textContent = nf(dc, 0) + "°"; $("toDn").textContent = nf(dn, 0) + "°";
+  },
+};
+
+// ================= Planche 3 : pendule =================
+const PE = {
+  th: 2.0, om: 0, gamma: 0, play: true, trail: [], dragging: false,
+  wrap(t) { return mod(t + Math.PI, TAU) - Math.PI; },
+  f(th, om) { return [om, -Math.sin(th) - this.gamma * om]; },
+  step(h) {
+    const [k1a, k1b] = this.f(this.th, this.om);
+    const [k2a, k2b] = this.f(this.th + h / 2 * k1a, this.om + h / 2 * k1b);
+    const [k3a, k3b] = this.f(this.th + h / 2 * k2a, this.om + h / 2 * k2b);
+    const [k4a, k4b] = this.f(this.th + h * k3a, this.om + h * k3b);
+    this.th = this.wrap(this.th + h / 6 * (k1a + 2 * k2a + 2 * k3a + k4a));
+    this.om += h / 6 * (k1b + 2 * k2b + 2 * k3b + k4b);
+  },
+  phaseGeom(w, h) { const mL = 44, mR = 18, mT = 22, mB = 34; return { x0: mL, y0: mT, W: w - mL - mR, H: h - mT - mB, WMAX: 3.2 }; },
+  set(th, om) { this.th = this.wrap(th); this.om = om; this.trail = []; },
+  init() {
+    const cvP = $("cvPend"), cvF = $("cvPhase");
+    onDrag(cvP, {
+      down: (x, y) => { this.dragging = true; this.fromPend(x, y); },
+      move: (x, y) => this.fromPend(x, y), up: () => { this.dragging = false; },
+    });
+    const fromPhase = (x, y) => { const g = this.phaseGeom(cvF.clientWidth, cvF.clientHeight);
+      const th = -Math.PI + (x - g.x0) / g.W * TAU, om = g.WMAX - (y - g.y0) / g.H * 2 * g.WMAX;
+      this.set(Math.max(-Math.PI, Math.min(Math.PI, th)), Math.max(-g.WMAX, Math.min(g.WMAX, om))); };
+    onDrag(cvF, { down: (x, y) => { this.dragging = true; fromPhase(x, y); }, move: fromPhase, up: () => { this.dragging = false; } });
+    $("pePlay").addEventListener("click", (e) => { this.play = !this.play; e.currentTarget.setAttribute("aria-pressed", this.play); e.currentTarget.textContent = this.play ? "❚❚ Pause" : "▶ Lancer"; });
+    $("peFlip").addEventListener("click", () => { this.om = -this.om; this.trail = []; });
+    document.querySelectorAll("[data-pe]").forEach((b) => b.addEventListener("click", () => { const [t, o] = b.dataset.pe.split(",").map(Number); this.set(t, o); }));
+    $("peG").addEventListener("input", (e) => { this.gamma = parseFloat(e.target.value); $("peGv").textContent = nf(this.gamma, 2); });
+  },
+  fromPend(x, y) {
+    const cv = $("cvPend"); const w = cv.clientWidth, h = cv.clientHeight; const cx = w / 2, cy = h * 0.4;
+    this.th = Math.atan2(x - cx, y - cy); this.om = 0; this.trail = [];
+  },
+  frame(dt) {
+    if (this.play && !this.dragging) { const n = 6, hh = dt * 1.6 / n; for (let i = 0; i < n; i++) this.step(hh); }
+    this.trail.push([this.th, this.om]); if (this.trail.length > 900) this.trail.shift();
+    const E = this.om * this.om / 2 - Math.cos(this.th);
+    // pendule
+    { const { ctx, w, h } = fit($("cvPend")); const cx = w / 2, cy = h * 0.4, L = Math.min(w, h) * 0.34;
+      dot(ctx, cx, cy, L, null, C.rule, 1);
+      line(ctx, cx - 40, cy, cx + 40, cy, C.ink, 2);
+      const bx = cx + L * Math.sin(this.th), by = cy + L * Math.cos(this.th);
+      line(ctx, cx, cy, bx, by, C.ink, 2.5); dot(ctx, cx, cy, 4, C.ink);
+      // flèche de vitesse
+      if (Math.abs(this.om) > 0.02) {
+        const tx = Math.cos(this.th), ty = -Math.sin(this.th), s = Math.max(-1, Math.min(1, this.om / 3)) * 70;
+        line(ctx, bx, by, bx + tx * s, by + ty * s, C.accent, 2.5); arrowHead(ctx, bx + tx * s, by + ty * s, Math.atan2(ty * s, tx * s), 10, C.accent);
+      }
+      dot(ctx, bx, by, 15, C.hl, C.ink, 2);
+      text(ctx, "θ = 0", cx, cy + L + 18, { font: MONO(11), color: C["ink-soft"] });
+      text(ctx, "θ = ±π", cx, cy - L - 14, { font: MONO(11), color: C["ink-soft"] });
+    }
+    // phase
+    { const { ctx, w, h } = fit($("cvPhase")); const g = this.phaseGeom(w, h);
+      const X = (t) => g.x0 + (t + Math.PI) / TAU * g.W, Y = (o) => g.y0 + (g.WMAX - o) / (2 * g.WMAX) * g.H;
+      ctx.save(); ctx.beginPath(); ctx.rect(g.x0, g.y0, g.W, g.H); ctx.clip();
+      line(ctx, g.x0, Y(0), g.x0 + g.W, Y(0), C.rule, 1); line(ctx, X(0), g.y0, X(0), g.y0 + g.H, C.rule, 1);
+      const levels = [-0.85, -0.55, -0.2, 0.2, 0.6, 1, 1.5, 2.2, 3.2, 4.4];
+      for (const lv of levels) {
+        for (const sg of [1, -1]) {
+          ctx.beginPath(); let on = false;
+          for (let k = 0; k <= 360; k++) {
+            const t = -Math.PI + k / 360 * TAU, q = 2 * (lv + Math.cos(t));
+            if (q < 0) { on = false; continue; }
+            const o = sg * Math.sqrt(q);
+            if (!on) { ctx.moveTo(X(t), Y(o)); on = true; } else ctx.lineTo(X(t), Y(o));
+          }
+          const sep = lv === 1;
+          ctx.strokeStyle = sep ? C.warm : C["ink-soft"]; ctx.globalAlpha = sep ? 0.95 : 0.4; ctx.lineWidth = sep ? 2 : 1; ctx.stroke(); ctx.globalAlpha = 1;
+        }
+      }
+      // trace
+      ctx.beginPath(); let prev = null;
+      for (const p of this.trail) { if (!prev || Math.abs(p[0] - prev[0]) > Math.PI) ctx.moveTo(X(p[0]), Y(p[1])); else ctx.lineTo(X(p[0]), Y(p[1])); prev = p; }
+      ctx.strokeStyle = C.accent; ctx.lineWidth = 2.2; ctx.stroke();
+      ctx.restore();
+      ctx.strokeStyle = C.ink; ctx.lineWidth = 1.5; ctx.strokeRect(g.x0, g.y0, g.W, g.H);
+      // bords recollés
+      [g.x0, g.x0 + g.W].forEach((x) => { arrowHead(ctx, x, g.y0 + g.H * 0.3, -Math.PI / 2, 10, C.warm); });
+      dot(ctx, X(this.th), Y(Math.max(-g.WMAX, Math.min(g.WMAX, this.om))), 7, C.hl, C.ink, 2);
+      [["−π", -Math.PI], ["0", 0], ["π", Math.PI]].forEach(([s, t]) => text(ctx, s, X(t), g.y0 + g.H + 14, { font: MONO(12), color: C["ink-soft"] }));
+      text(ctx, "θ", g.x0 + g.W - 6, g.y0 + g.H + 26, { font: HAND(15), color: C.ink, align: "right" });
+      [3, 0, -3].forEach((o) => text(ctx, String(o).replace("-", "−"), g.x0 - 8, Y(o), { font: MONO(12), color: C["ink-soft"], align: "right" }));
+      text(ctx, "ω", g.x0 - 30, g.y0 + 8, { font: HAND(15), color: C.ink, align: "left" });
+    }
+    $("peT").textContent = nf(this.th, 2) + " rad";
+    $("peW").textContent = nf(this.om, 2) + " rad/s";
+    $("peE").textContent = nf(E, 3);
+    $("peR").textContent = Math.abs(E - 1) < 0.01 ? "séparatrice" : E < 1 ? "oscillation" : "tour complet";
+  },
+};
+
+// ================= Planche 4 : lampes =================
+const LA = {
+  s: 0, t: 7, walking: null,
+  geom(w, h) {
+    const S = Math.min(w / 1.75, h / 1.6) * 0.95, ox = (w - S * 1.55) / 2, oy = (h + S * 1.38) / 2;
+    return (v) => { const X = v & 1, Y = (v >> 1) & 1, Z = (v >> 2) & 1; return [ox + X * S + Z * S * 0.55, oy - Y * S - Z * S * 0.38]; };
+  },
+  init() {
+    const box = $("laButtons");
+    this.btns = [0, 1, 2].map((i) => {
+      const b = document.createElement("button"); b.className = "btn lamp"; b.innerHTML = `<span class="bulb"></span>Lampe ${i + 1}`;
+      b.addEventListener("click", () => { this.stopWalk(); this.s ^= 1 << i; }); box.appendChild(b); return b;
+    });
+    const cv = $("cvCube");
+    onDrag(cv, { down: (x, y) => {
+      const P = this.geom(cv.clientWidth, cv.clientHeight); let best = null, bd = 26;
+      for (let v = 0; v < 8; v++) { const [px, py] = P(v); const d = Math.hypot(px - x, py - y); if (d < bd) { bd = d; best = v; } }
+      if (best !== null) { this.t = best === this.t ? null : best; } return false;
+    } });
+    $("laGo").addEventListener("click", () => {
+      if (this.t === null || this.t === this.s) return; this.stopWalk();
+      const diff = [0, 1, 2].filter((i) => ((this.s ^ this.t) >> i) & 1);
+      for (let k = diff.length - 1; k > 0; k--) { const j = Math.floor(Math.random() * (k + 1)); [diff[k], diff[j]] = [diff[j], diff[k]]; }
+      this.walking = setInterval(() => { const i = diff.shift(); if (i === undefined) return this.stopWalk(); this.s ^= 1 << i; }, 550);
+    });
+  },
+  stopWalk() { clearInterval(this.walking); this.walking = null; },
+  label(v) { return [0, 1, 2].map((i) => (v >> i) & 1).join(""); },
+  frame() {
+    const { ctx, w, h } = fit($("cvCube")); const P = this.geom(w, h);
+    const t = this.t, s = this.s;
+    const inSub = (u) => t !== null && [0, 1, 2].every((i) => (((s ^ t) >> i) & 1) || ((u >> i) & 1) === ((s >> i) & 1));
+    for (let u = 0; u < 8; u++) for (let i = 0; i < 3; i++) {
+      const v = u ^ (1 << i); if (v < u) continue;
+      const [x1, y1] = P(u), [x2, y2] = P(v); const sub = inSub(u) && inSub(v);
+      const fromCur = u === s || v === s;
+      line(ctx, x1, y1, x2, y2, sub ? C.warm : fromCur ? C.accent : C["ink-soft"], sub ? 3 : fromCur ? 2.2 : 1.3);
+    }
+    for (let v = 0; v < 8; v++) {
+      const [x, y] = P(v);
+      dot(ctx, x, y, 20, C.panel, v === s ? C.accent : v === t ? C.warm : C.ink, v === s ? 4 : v === t ? 3 : 1.5);
+      [0, 1, 2].forEach((i) => dot(ctx, x - 9 + i * 9, y, 3.4, ((v >> i) & 1) ? C.hl : C.panel, C.ink, 1.2));
+      text(ctx, this.label(v), x, y + 32, { font: MONO(12), color: C["ink-soft"] });
+    }
+    text(ctx, "lampe 1 →", w - 12, h - 12, { font: HAND(14), color: C["ink-soft"], align: "right" });
+    this.btns.forEach((b, i) => b.setAttribute("aria-pressed", String(!!((s >> i) & 1))));
+    $("laS").textContent = this.label(s); $("laT").textContent = t === null ? "—" : this.label(t);
+    const d = t === null ? null : popcount(s ^ t);
+    $("laD").textContent = d === null ? "—" : d; $("laN").textContent = d === null ? "—" : `${d}! = ${[1, 1, 2, 6][d]}`;
+  },
+};
+
+// ================= Planche 5 : bits =================
+const BI = {
+  code: "bin", A: 7, B: 8, next: "A",
+  word(v) { return this.code === "bin" ? v : v ^ (v >> 1); },
+  q4(w, h) { const R = Math.min(w, h) * 0.165, cx = w / 2, cy = h / 2;
+    const vs = [0, 1, 2, 3].map((k) => [Math.cos(k * Math.PI / 4 - Math.PI / 2) * R, Math.sin(k * Math.PI / 4 - Math.PI / 2) * R]);
+    return (word) => { let x = cx, y = cy; for (let i = 0; i < 4; i++) { const s = ((word >> (3 - i)) & 1) ? 1 : -1; x += s * vs[i][0]; y += s * vs[i][1]; } return [x, y]; }; },
+  lineX(w, v) { const m = 30; return m + v / 15 * (w - 2 * m); },
+  pick(v) { if (this.next === "A") { this.A = v; this.next = "B"; } else { this.B = v; this.next = "A"; } },
+  init() {
+    document.querySelectorAll("[data-code]").forEach((b) => b.addEventListener("click", () => {
+      this.code = b.dataset.code; document.querySelectorAll("[data-code]").forEach((o) => o.setAttribute("aria-pressed", String(o === b)));
+    }));
+    $("biPreset").addEventListener("click", () => { this.A = 7; this.B = 8; this.next = "A"; });
+    const cvL = $("cvLine"), cvQ = $("cvQ4");
+    onDrag(cvL, { down: (x) => { let best = 0, bd = 1e9; for (let v = 0; v < 16; v++) { const d = Math.abs(this.lineX(cvL.clientWidth, v) - x); if (d < bd) { bd = d; best = v; } } this.pick(best); return false; } });
+    onDrag(cvQ, { down: (x, y) => { const P = this.q4(cvQ.clientWidth, cvQ.clientHeight); let best = null, bd = 24;
+      for (let v = 0; v < 16; v++) { const [px, py] = P(this.word(v)); const d = Math.hypot(px - x, py - y); if (d < bd) { bd = d; best = v; } }
+      if (best !== null) this.pick(best); return false; } });
+  },
+  frame() {
+    const A = this.A, B = this.B;
+    // droite
+    { const { ctx, w, h } = fit($("cvLine")); const y = h * 0.55;
+      line(ctx, 18, y, w - 18, y, C.ink, 1.5);
+      const lo = Math.min(A, B), hi = Math.max(A, B);
+      if (lo !== hi) line(ctx, this.lineX(w, lo), y, this.lineX(w, hi), y, C.hl, 7);
+      for (let v = 0; v < 16; v++) {
+        const x = this.lineX(w, v); const sel = v === A ? C.accent : v === B ? C.warm : null;
+        dot(ctx, x, y, sel ? 7 : 4.5, sel || C.ink, sel ? C.ink : null, 1.5);
+        text(ctx, String(v), x, y + 20, { font: MONO(12), color: sel || C["ink-soft"] });
+        if (w > 520 || v % 3 === 0 || sel) text(ctx, bits(this.word(v), 4), x, y - 20, { font: MONO(w > 700 ? 12 : 10), color: sel || C.ink });
+      }
+    }
+    // Q4
+    { const { ctx, w, h } = fit($("cvQ4")); const P = this.q4(w, h);
+      for (let u = 0; u < 16; u++) for (let i = 0; i < 4; i++) { const v = u ^ (1 << i); if (v < u) continue; const [x1, y1] = P(u), [x2, y2] = P(v); line(ctx, x1, y1, x2, y2, C.rule, 1.2); }
+      for (let v = 0; v < 15; v++) {
+        const a = this.word(v), b = this.word(v + 1); const [x1, y1] = P(a), [x2, y2] = P(b);
+        const jump = popcount(a ^ b) > 1;
+        line(ctx, x1, y1, x2, y2, jump ? C.warm : C.accent, jump ? 1.8 : 2.4, jump ? [5, 4] : null);
+      }
+      for (let v = 0; v < 16; v++) {
+        const wd = this.word(v); const [x, y] = P(wd); const sel = v === A ? C.accent : v === B ? C.warm : null;
+        dot(ctx, x, y, 15, C.panel, sel || C.ink, sel ? 4 : 1.4);
+        text(ctx, String(v), x, y, { font: MONO(12), color: C.ink });
+        text(ctx, bits(wd, 4), x, y + 24, { font: MONO(10), color: C["ink-soft"] });
+      }
+    }
+    const wa = this.word(A), wb = this.word(B);
+    $("biA").textContent = `${A} = ${bits(wa, 4)}`; $("biB").textContent = `${B} = ${bits(wb, 4)}`;
+    $("biDl").textContent = Math.abs(A - B); $("biDh").textContent = popcount(wa ^ wb);
+    let len = 0, mx = 0; for (let v = 0; v < 15; v++) { const d = popcount(this.word(v) ^ this.word(v + 1)); len += d; mx = Math.max(mx, d); }
+    $("biLen").textContent = `${len} arêtes`; $("biMax").textContent = `${mx} bit${mx > 1 ? "s" : ""}`;
+  },
+};
+
+// ================= Planche 6 : droites =================
+const DR = {
+  P: [2, 3], Q: [-1, -1], D: [-0.5, 1.5], drag: null,
+  XY: { x: [-5, 5], y: [-5, 5] }, MB: { x: [-4, 4], y: [-10, 10] },
+  map(box, w, h) { const m = 28; return {
+    X: (x) => m + (x - box.x[0]) / (box.x[1] - box.x[0]) * (w - 2 * m), Y: (y) => h - m - (y - box.y[0]) / (box.y[1] - box.y[0]) * (h - 2 * m),
+    iX: (px) => box.x[0] + (px - m) / (w - 2 * m) * (box.x[1] - box.x[0]), iY: (py) => box.y[0] + (h - m - py) / (h - 2 * m) * (box.y[1] - box.y[0]), m }; },
+  init() {
+    const cvA = $("cvXY"), cvB = $("cvMB");
+    onDrag(cvA, {
+      down: (x, y) => { const M = this.map(this.XY, cvA.clientWidth, cvA.clientHeight);
+        const dP = Math.hypot(M.X(this.P[0]) - x, M.Y(this.P[1]) - y), dQ = Math.hypot(M.X(this.Q[0]) - x, M.Y(this.Q[1]) - y);
+        this.drag = dP <= dQ ? "P" : "Q"; this.moveXY(x, y); },
+      move: (x, y) => this.moveXY(x, y),
+    });
+    onDrag(cvB, { down: (x, y) => this.moveMB(x, y), move: (x, y) => this.moveMB(x, y) });
+  },
+  snap(v) { return Math.round(v * 4) / 4; },
+  moveXY(x, y) { const cv = $("cvXY"); const M = this.map(this.XY, cv.clientWidth, cv.clientHeight);
+    const p = [Math.max(-5, Math.min(5, this.snap(M.iX(x)))), Math.max(-5, Math.min(5, this.snap(M.iY(y))))]; this[this.drag] = p; },
+  moveMB(x, y) { const cv = $("cvMB"); const M = this.map(this.MB, cv.clientWidth, cv.clientHeight);
+    this.D = [Math.max(-4, Math.min(4, Math.round(M.iX(x) * 10) / 10)), Math.max(-10, Math.min(10, Math.round(M.iY(y) * 4) / 4))]; },
+  axes(ctx, M, box, w, h, lx, ly, step) {
+    for (let v = Math.ceil(box.x[0] / step[0]) * step[0]; v <= box.x[1]; v += step[0]) line(ctx, M.X(v), M.m, M.X(v), h - M.m, C.rule, 1);
+    for (let v = Math.ceil(box.y[0] / step[1]) * step[1]; v <= box.y[1]; v += step[1]) line(ctx, M.m, M.Y(v), w - M.m, M.Y(v), C.rule, 1);
+    line(ctx, M.X(0), M.m, M.X(0), h - M.m, C["ink-soft"], 1.4); line(ctx, M.m, M.Y(0), w - M.m, M.Y(0), C["ink-soft"], 1.4);
+    text(ctx, lx, w - M.m, M.Y(0) - 12, { font: HAND(16), color: C.ink, align: "right" });
+    text(ctx, ly, M.X(0) + 10, M.m + 4, { font: HAND(16), color: C.ink, align: "left" });
+    text(ctx, String(box.x[1]), w - M.m, M.Y(0) + 13, { font: MONO(10), color: C["ink-soft"], align: "right" });
+    text(ctx, String(box.y[1]), M.X(0) - 6, M.m + 4, { font: MONO(10), color: C["ink-soft"], align: "right" });
+  },
+  drawLine(ctx, M, box, m, b, color, lw, dash) {  // y = m x + b
+    const x1 = box.x[0] - 1, x2 = box.x[1] + 1; line(ctx, M.X(x1), M.Y(m * x1 + b), M.X(x2), M.Y(m * x2 + b), color, lw, dash);
+  },
+  fmtLine(m, b) { const s = b < 0 ? " − " + nf(-b, 2) : " + " + nf(b, 2); return `y = ${nf(m, 2)}x${s}`; },
+  frame() {
+    const [xp, yp] = this.P, [xq, yq] = this.Q, [md, bd] = this.D;
+    const vertical = Math.abs(xp - xq) < 1e-9, same = vertical && Math.abs(yp - yq) < 1e-9;
+    const mPQ = vertical ? null : (yp - yq) / (xp - xq), bPQ = vertical ? null : yp - mPQ * xp;
+    // plan xy
+    { const { ctx, w, h } = fit($("cvXY")); const M = this.map(this.XY, w, h);
+      ctx.save(); ctx.beginPath(); ctx.rect(M.m, M.m, w - 2 * M.m, h - 2 * M.m); ctx.clip();
+      this.axes(ctx, M, this.XY, w, h, "x", "y", [1, 1]);
+      this.drawLine(ctx, M, this.XY, md, bd, C["ink-soft"], 1.8, [6, 5]);
+      if (!same) { if (vertical) line(ctx, M.X(xp), 0, M.X(xp), h, C.ink, 2.4); else this.drawLine(ctx, M, this.XY, mPQ, bPQ, C.ink, 2.4); }
+      ctx.restore();
+      dot(ctx, M.X(xp), M.Y(yp), 8, C.accent, C.ink, 1.5); text(ctx, "P", M.X(xp) + 14, M.Y(yp) - 12, { font: HAND(17), color: C.accent });
+      dot(ctx, M.X(xq), M.Y(yq), 8, C.warm, C.ink, 1.5); text(ctx, "Q", M.X(xq) + 14, M.Y(yq) - 12, { font: HAND(17), color: C.warm });
+    }
+    // espace mb
+    { const { ctx, w, h } = fit($("cvMB")); const M = this.map(this.MB, w, h);
+      ctx.save(); ctx.beginPath(); ctx.rect(M.m, M.m, w - 2 * M.m, h - 2 * M.m); ctx.clip();
+      this.axes(ctx, M, this.MB, w, h, "m", "b", [1, 2]);
+      this.drawLine(ctx, M, this.MB, -xp, yp, C.accent, 2.4);   // b = yP − m xP
+      this.drawLine(ctx, M, this.MB, -xq, yq, C.warm, 2.4);
+      ctx.restore();
+      if (!vertical) { const X = M.X(mPQ), Y = M.Y(bPQ); if (X > M.m && X < w - M.m && Y > M.m && Y < h - M.m) { dot(ctx, X, Y, 8, C.ink, C.panel, 2); text(ctx, "(PQ)", X + 12, Y + 14, { font: HAND(15), color: C.ink, align: "left" }); } }
+      dot(ctx, M.X(md), M.Y(bd), 8, C.panel, C["ink-soft"], 2.5); text(ctx, "D", M.X(md) - 14, M.Y(bd) - 12, { font: HAND(16), color: C["ink-soft"] });
+      if (vertical && !same) text(ctx, "duales parallèles : (PQ) est verticale", w / 2, h - M.m - 14, { font: HAND(15), color: C.warm });
+    }
+    $("drP").textContent = `(${nf(xp, 2)} ; ${nf(yp, 2)})`; $("drQ").textContent = `(${nf(xq, 2)} ; ${nf(yq, 2)})`;
+    $("drPQ").textContent = same ? "P = Q : une infinité" : vertical ? `x = ${nf(xp, 2)} (sans (m, b))` : this.fmtLine(mPQ, bPQ);
+    $("drD").textContent = this.fmtLine(md, bd);
+  },
+};
+
+// ================= Planche 7 : simplexe =================
+const SI = {
+  p: [0.6, 0.3, 0.1], E: [0, 1, 2], beta: 1, follow: true, heat: null, heatKey: "",
+  geom(w, h) { const m = 46; const s = Math.min(w - 2 * m, (h - 2 * m) / 0.866); const cx = w / 2, top = (h - s * 0.866) / 2;
+    return [[cx, top], [cx - s / 2, top + s * 0.866], [cx + s / 2, top + s * 0.866]]; },
+  toXY(V, p) { return [p[0] * V[0][0] + p[1] * V[1][0] + p[2] * V[2][0], p[0] * V[0][1] + p[1] * V[1][1] + p[2] * V[2][1]]; },
+  toP(V, x, y) {
+    const [[x1, y1], [x2, y2], [x3, y3]] = V; const det = (y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3);
+    const l1 = ((y2 - y3) * (x - x3) + (x3 - x2) * (y - y3)) / det, l2 = ((y3 - y1) * (x - x3) + (x1 - x3) * (y - y3)) / det; return [l1, l2, 1 - l1 - l2];
+  },
+  H(p) { return -p.reduce((a, q) => a + (q > 1e-12 ? q * Math.log2(q) : 0), 0); },
+  boltz(beta) { const w = this.E.map((e) => Math.exp(-beta * e)); const Z = w.reduce((a, b) => a + b, 0); return w.map((v) => v / Z); },
+  init() {
+    const cv = $("cvSimplex");
+    const set = (x, y) => { const V = this.geom(cv.clientWidth, cv.clientHeight); let p = this.toP(V, x, y).map((q) => Math.max(0, q)); const s = p[0] + p[1] + p[2]; this.p = p.map((q) => q / s);
+      this.follow = false; $("siFollow").checked = false; };
+    onDrag(cv, { down: set, move: set });
+    const upd = () => { this.E[1] = parseFloat($("siE2").value); this.E[2] = parseFloat($("siE3").value); this.beta = parseFloat($("siB").value);
+      $("siE2v").textContent = nf(this.E[1], 2); $("siE3v").textContent = nf(this.E[2], 2); $("siBv").textContent = nf(this.beta, 2); };
+    ["siE2", "siE3", "siB"].forEach((id) => $(id).addEventListener("input", () => { upd(); if (id === "siB") { this.follow = true; $("siFollow").checked = true; } }));
+    $("siFollow").addEventListener("change", (e) => { this.follow = e.target.checked; });
+    upd();
+  },
+  buildHeat(w, h, d, V) {
+    const W = Math.round(w * d), Hh = Math.round(h * d); const off = document.createElement("canvas"); off.width = W; off.height = Hh;
+    const octx = off.getContext("2d"); const img = octx.createImageData(W, Hh);
+    const a = hexRgb(C.panel), b = hexRgb(C.accent); const bands = 8, Hmax = Math.log2(3);
+    for (let py = 0; py < Hh; py++) for (let px = 0; px < W; px++) {
+      const p = this.toP(V, px / d, py / d); if (p[0] < 0 || p[1] < 0 || p[2] < 0) continue;
+      const t = Math.min(bands - 1, Math.floor(this.H(p) / Hmax * bands)) / (bands - 1);
+      const k = 0.06 + 0.42 * t, i = (py * W + px) * 4;
+      img.data[i] = a[0] + (b[0] - a[0]) * k; img.data[i + 1] = a[1] + (b[1] - a[1]) * k; img.data[i + 2] = a[2] + (b[2] - a[2]) * k; img.data[i + 3] = 255;
+    }
+    octx.putImageData(img, 0, 0); return off;
+  },
+  frame() {
+    const cv = $("cvSimplex"); const { ctx, w, h, d } = fit(cv); const V = this.geom(w, h);
+    const key = `${w}x${h}x${d}x${themeVersion}`;
+    if (key !== this.heatKey) { this.heat = this.buildHeat(w, h, d, V); this.heatKey = key; }
+    ctx.drawImage(this.heat, 0, 0, w, h);
+    ctx.beginPath(); ctx.moveTo(...V[0]); ctx.lineTo(...V[1]); ctx.lineTo(...V[2]); ctx.closePath(); ctx.strokeStyle = C.ink; ctx.lineWidth = 2; ctx.stroke();
+    // courbe de Boltzmann
+    for (const sign of [1, -1]) {
+      ctx.beginPath();
+      for (let k = 0; k <= 200; k++) { const bt = sign * Math.pow(k / 200, 2) * 12; const [x, y] = this.toXY(V, this.boltz(bt)); if (k === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+      ctx.setLineDash(sign > 0 ? [] : [5, 5]); ctx.strokeStyle = C.warm; ctx.lineWidth = 2.2; ctx.stroke(); ctx.setLineDash([]);
+    }
+    const c = this.toXY(V, [1 / 3, 1 / 3, 1 / 3]); dot(ctx, c[0], c[1], 3.5, C.ink);
+    text(ctx, "β = 0", c[0] + 8, c[1] + 12, { font: MONO(11), color: C.ink, align: "left" });
+    const names = ["issue 1", "issue 2", "issue 3"];
+    text(ctx, `${names[0]} certaine (E₁ = 0)`, V[0][0], V[0][1] - 16, { font: HAND(15), color: C.ink });
+    text(ctx, `${names[1]} (E₂ = ${nf(this.E[1], 1)})`, V[1][0] + 4, V[1][1] + 22, { font: HAND(15), color: C.ink, align: "left" });
+    text(ctx, `${names[2]} (E₃ = ${nf(this.E[2], 1)})`, V[2][0] - 4, V[2][1] + 22, { font: HAND(15), color: C.ink, align: "right" });
+    if (this.follow) this.p = this.boltz(this.beta);
+    const [x, y] = this.toXY(V, this.p); dot(ctx, x, y, 8, C.hl, C.ink, 2);
+    // légende entropie
+    text(ctx, "plus foncé = H plus grand (max log₂ 3 ≈ 1,585 bit au centre)", w / 2, h - 10, { font: MONO(10), color: C["ink-soft"] });
+    $("siP1").textContent = nf(this.p[0], 3); $("siP2").textContent = nf(this.p[1], 3); $("siP3").textContent = nf(this.p[2], 3);
+    $("siH").textContent = nf(this.H(this.p), 3) + " bit";
+  },
+};
+
+// ================= Planche 8 : concepts =================
+const OK = {
+  toLin: (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)),
+  toGam: (c) => (c < 0 ? -OK.toGam(-c) : c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055),
+  fromHex(hex) {
+    const [r, g, b] = hexRgb(hex).map((v) => OK.toLin(v / 255));
+    const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+    const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+    const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+    return [0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s, 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s, 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s];
+  },
+  toRgb([L, a, b]) {   // renvoie [r,g,b] 0..1 non bornés (pour tester la gamme)
+    const l = Math.pow(L + 0.3963377774 * a + 0.2158037573 * b, 3), m = Math.pow(L - 0.1055613458 * a - 0.0638541728 * b, 3), s = Math.pow(L - 0.0894841775 * a - 1.2914855480 * b, 3);
+    return [4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s, -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s, -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s].map(OK.toGam);
+  },
+};
+const CO = {
+  dom: "color", L: 0.65, wL: 1, showCat: false, sample: null, A: 0, B: 2, dragIdx: null, cache: null, cacheKey: "", ver: 0,
+  colors: [
+    ["rouge", "#d0202a"], ["orange", "#ee7a1c"], ["jaune", "#f2d21c"], ["vert", "#2e9a3e"], ["bleu", "#1f56c8"], ["violet", "#7a35a8"],
+    ["rose", "#f08cb4"], ["marron", "#7a4520"], ["gris", "#8a8a8a"], ["blanc", "#f4f4f4"], ["noir", "#161616"],
+  ].map(([n, hex]) => ({ n, hex, c: OK.fromHex(hex) })),
+  vowels: [
+    ["i", "lit", 290, 2200], ["y", "lu", 290, 1800], ["u", "loup", 300, 750], ["e", "été", 370, 2100], ["ø", "deux", 380, 1650],
+    ["o", "eau", 380, 850], ["ɛ", "lait", 520, 1850], ["œ", "peur", 520, 1500], ["ɔ", "porte", 520, 950], ["a", "patte", 700, 1300],
+  ].map(([n, ex, f1, f2], i) => ({ n, ex, c: [Math.log(f1), Math.log(f2)], hex: ["#c0392b", "#d35400", "#b7950b", "#27ae60", "#16a085", "#2980b9", "#8e44ad", "#c2185b", "#6d4c41", "#546e7a"][i] })),
+  protos() { return this.dom === "color" ? this.colors : this.vowels; },
+  // repère du canevas : couleur → (a, b) ∈ [-0.3, 0.3]² ; voyelle → (ln F2 décroissant, ln F1 croissant vers le bas)
+  V: { f2: [Math.log(2600), Math.log(600)], f1: [Math.log(240), Math.log(880)] },
+  box(w, h) { const m = 34; const S = Math.min(w, h) - 2 * m; return { x0: (w - S) / 2, y0: (h - S) / 2 - 4, S }; },
+  toPx(c, g) {
+    if (this.dom === "color") return [g.x0 + (c[1] + 0.3) / 0.6 * g.S, g.y0 + (0.3 - c[2]) / 0.6 * g.S];
+    return [g.x0 + (c[1] - this.V.f2[0]) / (this.V.f2[1] - this.V.f2[0]) * g.S, g.y0 + (c[0] - this.V.f1[0]) / (this.V.f1[1] - this.V.f1[0]) * g.S];
+  },
+  fromPx(x, y, g, Lfix) {
+    const u = (x - g.x0) / g.S, v = (y - g.y0) / g.S;
+    if (this.dom === "color") return [Lfix ?? this.L, -0.3 + u * 0.6, 0.3 - v * 0.6];
+    return [this.V.f1[0] + v * (this.V.f1[1] - this.V.f1[0]), this.V.f2[0] + u * (this.V.f2[1] - this.V.f2[0])];
+  },
+  d2(c, p) {
+    if (this.dom === "color") { const dL = c[0] - p[0], da = c[1] - p[1], db = c[2] - p[2]; return this.wL * dL * dL + da * da + db * db; }
+    const a = c[0] - p[0], b = c[1] - p[1]; return a * a + b * b;
+  },
+  ranked(c) { return this.protos().map((p, i) => ({ i, d: Math.sqrt(this.d2(c, p.c)) })).sort((a, b) => a.d - b.d); },
+  nearest(c) { let best = 0, bd = Infinity; const P = this.protos(); for (let i = 0; i < P.length; i++) { const d = this.d2(c, P[i].c); if (d < bd) { bd = d; best = i; } } return best; },
+  fillSelects() {
+    const P = this.protos();
+    ["coA", "coB"].forEach((id, k) => { const s = $(id); s.innerHTML = ""; P.forEach((p, i) => { const o = document.createElement("option"); o.value = i; o.textContent = this.dom === "vowel" ? `[${p.n}] ${p.ex}` : p.n; s.appendChild(o); }); s.value = k ? this.B : this.A; });
+  },
+  setDom(d) {
+    this.dom = d; this.sample = null; this.A = 0; this.B = d === "color" ? 2 : 9; this.ver++;
+    document.querySelectorAll("[data-dom]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.dom === d)));
+    $("coColorCtl").hidden = d !== "color"; $("coVowelCtl").hidden = d !== "vowel";
+    $("coTitle").textContent = d === "color" ? "Tranche de l'espace OKLab" : "Le plan des formants (F2, F1)";
+    this.fillSelects(); this.clearSample(); this.thinkText();
+  },
+  thinkText() {
+    if (this.dom === "color") {
+      $("coThink1").textContent = "Fais glisser la luminosité. Les catégories sont des régions en trois dimensions et la planche n'en montre qu'une tranche. Vers les L bas, le marron prend la place de l'orange. Vers les L hauts, le rose apparaît à côté du rouge. La zone sans couleur réelle (hachures claires) est hors de la gamme de l'écran, mais l'espace et ses catégories s'y prolongent.";
+      $("coThink2").textContent = "Le poids de L change la métrique sans bouger aucun prototype. Pour Gärdenfors, c'est ainsi que le contexte agit : il rend une dimension plus ou moins saillante, et les frontières se déplacent. Le choix de la distance fait partie du concept.";
+    } else {
+      $("coThink1").textContent = "L'axe horizontal suit F2 (l'avancée de la langue), l'axe vertical F1 (l'ouverture de la bouche). Clique dans une région pour entendre une voyelle de synthèse. Près d'une frontière, l'oreille hésite elle aussi.";
+      $("coThink2").textContent = "L'espace acoustique est le même pour toutes les langues. Ce sont les prototypes qui changent. Le français place [y] et [ø] là où l'anglais n'a pas de catégorie, et cette région est alors absorbée par les voisines. Une langue choisit des prototypes dans un espace qu'elle n'a pas choisi : c'est la tension entre choix et découverte de ta discussion.";
+    }
+  },
+  clearSample() { this.sample = null; ["coCat", "coXY", "coN1", "coN2"].forEach((id) => $(id).textContent = "—"); $("coMargin").textContent = ""; },
+  init() {
+    document.querySelectorAll("[data-dom]").forEach((b) => b.addEventListener("click", () => this.setDom(b.dataset.dom)));
+    $("coL").addEventListener("input", (e) => { this.L = parseFloat(e.target.value); if (this.sample && this.dom === "color") this.sample[0] = this.L; });
+    $("coW").addEventListener("input", (e) => { this.wL = parseFloat(e.target.value); });
+    $("coMode").addEventListener("click", (e) => { this.showCat = !this.showCat; e.currentTarget.setAttribute("aria-pressed", this.showCat); e.currentTarget.textContent = this.showCat ? "Montrer les couleurs réelles" : "Montrer les catégories"; });
+    $("coA").addEventListener("change", (e) => { this.A = +e.target.value; });
+    $("coB").addEventListener("change", (e) => { this.B = +e.target.value; });
+    const cv = $("cvConcept");
+    onDrag(cv, {
+      down: (x, y) => {
+        const g = this.box(cv.clientWidth, cv.clientHeight); let best = null, bd = 16;
+        this.protos().forEach((p, i) => { const [px, py] = this.toPx(p.c, g); const d = Math.hypot(px - x, py - y); if (d < bd) { bd = d; best = i; } });
+        if (best !== null) { this.dragIdx = best; return; }
+        this.dragIdx = null; this.setSample(x, y, g); if (this.dom === "vowel" && $("coSound").checked) this.play(this.sample);
+      },
+      move: (x, y) => {
+        const g = this.box(cv.clientWidth, cv.clientHeight);
+        if (this.dragIdx !== null) { const p = this.protos()[this.dragIdx]; const c = this.fromPx(Math.max(g.x0, Math.min(g.x0 + g.S, x)), Math.max(g.y0, Math.min(g.y0 + g.S, y)), g, p.c[0]); if (this.dom === "color") { p.c[1] = c[1]; p.c[2] = c[2]; } else p.c = c; this.ver++; }
+        else this.setSample(x, y, g);
+      },
+      up: () => { if (this.dragIdx === null && this.dom === "vowel" && $("coSound").checked && this.sample) this.play(this.sample); this.dragIdx = null; },
+    });
+    this.setDom("color");
+    $("coLv").textContent = nf(this.L, 2); $("coWv").textContent = nf(this.wL, 2);
+  },
+  setSample(x, y, g) { this.sample = this.fromPx(Math.max(g.x0, Math.min(g.x0 + g.S, x)), Math.max(g.y0, Math.min(g.y0 + g.S, y)), g); },
+  play(c) {
+    try {
+      const ac = this.ac || (this.ac = new (window.AudioContext || window.webkitAudioContext)()); ac.resume && ac.resume();
+      const f1 = Math.exp(c[0]), f2 = Math.exp(c[1]), t = ac.currentTime;
+      const src = ac.createOscillator(); src.type = "sawtooth"; src.frequency.setValueAtTime(125, t); src.frequency.linearRampToValueAtTime(108, t + 0.7);
+      const out = ac.createGain(); out.gain.setValueAtTime(0, t); out.gain.linearRampToValueAtTime(0.22, t + 0.05); out.gain.setValueAtTime(0.22, t + 0.5); out.gain.linearRampToValueAtTime(0, t + 0.72);
+      [[f1, 7, 1], [f2, 11, 0.55], [2650, 12, 0.25]].forEach(([f, q, gn]) => { const bp = ac.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = f; bp.Q.value = q; const gg = ac.createGain(); gg.gain.value = gn * 4; src.connect(bp); bp.connect(gg); gg.connect(out); });
+      out.connect(ac.destination); src.start(t); src.stop(t + 0.75);
+    } catch (e) { /* audio indisponible */ }
+  },
+  build(w, h, d) {
+    const g = this.box(w, h), step = 2, W = Math.ceil(g.S / step), P = this.protos();
+    const off = document.createElement("canvas"); off.width = W; off.height = W; const o = off.getContext("2d"); const img = o.createImageData(W, W);
+    const cat = new Int16Array(W * W), panel = hexRgb(C.panel), ink = hexRgb(C.ink);
+    for (let j = 0; j < W; j++) for (let i = 0; i < W; i++) { const c = this.fromPx(g.x0 + (i + 0.5) * step, g.y0 + (j + 0.5) * step, g); cat[j * W + i] = this.nearest(c); }
+    for (let j = 0; j < W; j++) for (let i = 0; i < W; i++) {
+      const k = j * W + i, id = cat[k], at = k * 4; let rgb;
+      const edge = (i + 1 < W && cat[k + 1] !== id) || (j + 1 < W && cat[k + W] !== id);
+      if (edge) rgb = ink;
+      else {
+        const pc = hexRgb(P[id].hex);
+        if (this.dom === "color" && !this.showCat) {
+          const c = this.fromPx(g.x0 + (i + 0.5) * step, g.y0 + (j + 0.5) * step, g); const r = OK.toRgb(c);
+          const inG = r.every((v) => v >= -0.002 && v <= 1.002);
+          if (inG) rgb = r.map((v) => Math.round(Math.max(0, Math.min(1, v)) * 255));
+          else { const hatch = ((i + j) % 6) < 1; const k2 = hatch ? 0.32 : 0.12; rgb = panel.map((v, q) => v + (pc[q] - v) * k2); }
+        } else { const k2 = this.dom === "color" ? 0.85 : 0.28; rgb = panel.map((v, q) => v + (pc[q] - v) * k2); }
+      }
+      img.data[at] = rgb[0]; img.data[at + 1] = rgb[1]; img.data[at + 2] = rgb[2]; img.data[at + 3] = 255;
+    }
+    o.putImageData(img, 0, 0); return off;
+  },
+  frame() {
+    $("coLv").textContent = nf(this.L, 2); $("coWv").textContent = nf(this.wL, 2);
+    const cv = $("cvConcept"); const { ctx, w, h, d } = fit(cv); const g = this.box(w, h), P = this.protos();
+    const key = [this.dom, this.L, this.wL, this.showCat, this.ver, w, h, themeVersion].join("|");
+    if (key !== this.cacheKey) { this.cache = this.build(w, h, d); this.cacheKey = key; }
+    ctx.imageSmoothingEnabled = false; ctx.drawImage(this.cache, g.x0, g.y0, g.S, g.S); ctx.imageSmoothingEnabled = true;
+    ctx.strokeStyle = C.ink; ctx.lineWidth = 1.5; ctx.strokeRect(g.x0, g.y0, g.S, g.S);
+    // axes
+    if (this.dom === "color") {
+      text(ctx, "a (vert ← → rouge)", g.x0 + g.S, g.y0 + g.S + 16, { font: MONO(11), color: C["ink-soft"], align: "right" });
+      text(ctx, "b (bleu ↓ ↑ jaune)", g.x0, g.y0 - 12, { font: MONO(11), color: C["ink-soft"], align: "left" });
+    } else {
+      text(ctx, "← F2 (Hz) : langue en avant", g.x0, g.y0 + g.S + 16, { font: MONO(11), color: C["ink-soft"], align: "left" });
+      text(ctx, "F1 ↓ : bouche plus ouverte", g.x0, g.y0 - 12, { font: MONO(11), color: C["ink-soft"], align: "left" });
+      [2500, 2000, 1500, 1000, 700].forEach((f) => { const [x] = this.toPx([this.V.f1[0], Math.log(f)], g); line(ctx, x, g.y0 + g.S, x, g.y0 + g.S - 5, C.ink, 1); text(ctx, String(f), x, g.y0 + g.S - 12, { font: MONO(10), color: C["ink-soft"] }); });
+      [300, 400, 500, 600, 800].forEach((f) => { const [, y] = this.toPx([Math.log(f), this.V.f2[0]], g); line(ctx, g.x0, y, g.x0 + 5, y, C.ink, 1); text(ctx, String(f), g.x0 + 8, y, { font: MONO(10), color: C["ink-soft"], align: "left" }); });
+    }
+    // segment
+    const pa = P[this.A].c, pb = P[this.B].c, [ax, ay] = this.toPx(pa, g), [bx, by] = this.toPx(pb, g);
+    line(ctx, ax, ay, bx, by, C.ink, 2, [6, 5]);
+    // prototypes (étiquettes décalées quand plusieurs prototypes se superposent)
+    const placed = [];
+    P.forEach((p, i) => {
+      const [x, y0] = this.toPx(p.c, g);
+      const stack = placed.filter(([qx, qy]) => Math.hypot(qx - x, qy - y0) < 14).length; placed.push([x, y0]);
+      const y = y0;
+      const fade = this.dom === "color" ? Math.max(0.35, 1 - Math.abs(p.c[0] - this.L) * 1.6) : 1;
+      ctx.globalAlpha = fade;
+      dot(ctx, x, y, 9, p.hex, C.ink, 2);
+      const lab = this.dom === "vowel" ? `[${p.n}] ${p.ex}` : p.n;
+      ctx.font = HAND(15); const tw = ctx.measureText(lab).width;
+      const ly = y - 12 + stack * 19;
+      ctx.fillStyle = C.panel; ctx.globalAlpha = fade * 0.85; ctx.fillRect(x + 11, ly - 9, tw + 6, 18); ctx.globalAlpha = fade;
+      text(ctx, lab, x + 14, ly, { font: HAND(15), color: C.ink, align: "left" });
+      ctx.globalAlpha = 1;
+    });
+    // échantillon
+    if (this.sample) {
+      const [x, y] = this.toPx(this.sample, g); const r = this.ranked(this.sample), p1 = P[r[0].i], p2 = P[r[1].i];
+      line(ctx, x, y, ...this.toPx(p1.c, g), C.accent, 1.5);
+      dot(ctx, x, y, 7, this.dom === "color" ? (() => { const v = OK.toRgb(this.sample).map((q) => Math.round(Math.max(0, Math.min(1, q)) * 255)); return `rgb(${v})`; })() : C.hl, C.accent, 3);
+      const name = (p) => this.dom === "vowel" ? `[${p.n}]` : p.n;
+      $("coCat").textContent = name(p1);
+      $("coXY").textContent = this.dom === "color" ? `L ${nf(this.sample[0], 2)} · a ${nf(this.sample[1], 2)} · b ${nf(this.sample[2], 2)}` : `F1 ${Math.round(Math.exp(this.sample[0]))} · F2 ${Math.round(Math.exp(this.sample[1]))} Hz`;
+      $("coN1").textContent = `${name(p1)} : ${nf(r[0].d, 3)}`; $("coN2").textContent = `${name(p2)} : ${nf(r[1].d, 3)}`;
+      const m = (r[1].d - r[0].d) / r[1].d;
+      $("coMargin").textContent = m < 0.08 ? `Tout près de la frontière ${name(p1)} / ${name(p2)} : un léger déplacement change la catégorie.` : `Bien à l'intérieur de « ${name(p1)} ».`;
+    }
+    // bandeau du segment
+    { const { ctx: s, w: sw, h: sh } = fit($("cvStrip")); const N = 240, segs = []; let cur = -1, start = 0;
+      for (let k = 0; k < N; k++) {
+        const t = (k + 0.5) / N, c = pa.map((v, q) => v + (pb[q] - v) * t), id = this.nearest(c);
+        let col;
+        if (this.dom === "color") { const v = OK.toRgb(c).map((q) => Math.round(Math.max(0, Math.min(1, q)) * 255)); col = `rgb(${v})`; } else col = P[id].hex;
+        s.fillStyle = col; s.fillRect(8 + k / N * (sw - 16), 6, (sw - 16) / N + 1, sh * 0.45);
+        if (id !== cur) { if (cur >= 0) segs.push([cur, start, k]); cur = id; start = k; }
+      }
+      segs.push([cur, start, N]);
+      s.strokeStyle = C.ink; s.lineWidth = 1.5; s.strokeRect(8, 6, sw - 16, sh * 0.45);
+      segs.forEach(([id, a, b]) => {
+        const x0 = 8 + a / N * (sw - 16), x1 = 8 + b / N * (sw - 16);
+        if (a > 0) line(s, x0, 2, x0, sh * 0.45 + 12, C.ink, 1.5);
+        const lab = this.dom === "vowel" ? `[${P[id].n}]` : P[id].n;
+        if (x1 - x0 > 22) text(s, lab, (x0 + x1) / 2, sh * 0.45 + 22, { font: HAND(14), color: C.ink });
+      });
+    }
+  },
+};
+
+// ================= Routage & boucle =================
+const PLATES = { tore: TO, pendule: PE, lampes: LA, bits: BI, droites: DR, simplexe: SI, concepts: CO };
+Object.values(PLATES).forEach((p) => p.init());
+let active = "tore";
+function route() {
+  const h = location.hash.replace("#", ""); active = PLATES[h] ? h : "tore";
+  for (const k in PLATES) $("p-" + k).hidden = k !== active;
+  document.querySelectorAll("[data-plate]").forEach((a) => { if (a.dataset.plate === active) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+}
+addEventListener("hashchange", route); route();
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  try { PLATES[active].frame(reduced ? dt * 0.6 : dt); } catch (e) { console.error(e); }
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+document.fonts && document.fonts.ready.then(() => { SI.heatKey = ""; });
+</script>
