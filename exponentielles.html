@@ -1,0 +1,724 @@
+<meta charset="utf-8">
+<title>Lois exponentielles</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout : cahier 2 de l'Atlas, même papier à points. Bandeau de planches 9 à 13, une planche à la fois : manipulation à gauche, courbes à droite, carnet « À observer » en dessous. */
+:root {
+  --paper: #f6f7f3;
+  --panel: #ffffff;
+  --ink: #1c2332;
+  --ink-soft: #5d6677;
+  --rule: #dfe3ea;
+  --accent: #1f5fbf;
+  --warm: #c24a1c;
+  --hl: #f3d35b;
+  --f-hand: "Kalam", "Segoe Print", cursive;
+  --f-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #131720; --panel: #1a1f2a; --ink: #e6e8ee; --ink-soft: #98a1b3; --rule: #2a313e;
+    --accent: #82b2ff; --warm: #f08a5d; --hl: #c9a233; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #131720; --panel: #1a1f2a; --ink: #e6e8ee; --ink-soft: #98a1b3; --rule: #2a313e;
+  --accent: #82b2ff; --warm: #f08a5d; --hl: #c9a233; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--paper); color: var(--ink); font-family: var(--f-ui); font-size: 15px; line-height: 1.5;
+  background-image: radial-gradient(var(--rule) 1.2px, transparent 1.2px); background-size: 24px 24px;
+}
+.wrap {
+  max-width: 1240px; margin: 0 auto; padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 22px;
+}
+header { display: flex; flex-direction: column; gap: 4px; max-width: 74ch; }
+.eyebrow { font: 500 .78rem var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); }
+.eyebrow a { color: var(--accent); }
+h1 { font: 700 clamp(2rem, 5vw, 3rem)/1.05 var(--f-hand); margin: 0; text-wrap: balance; }
+h2 { font: 700 1.6rem/1.15 var(--f-hand); margin: 0; text-wrap: balance; }
+h3 { font: 700 1.15rem/1.2 var(--f-hand); margin: 0; }
+.lede { margin: 4px 0 0; color: var(--ink-soft); }
+nav.plates { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+nav.plates a {
+  display: flex; flex-direction: column; gap: 2px; text-decoration: none; color: var(--ink);
+  background: var(--panel); border: 1.5px solid var(--ink); border-radius: 3px; padding: 8px 10px;
+}
+nav.plates a .n { font: 500 .72rem var(--f-mono); color: var(--ink-soft); letter-spacing: .05em; }
+nav.plates a .t { font: 700 1.02rem/1.15 var(--f-hand); }
+nav.plates a[aria-current="page"] { background: var(--ink); color: var(--panel); }
+nav.plates a[aria-current="page"] .n { color: var(--panel); opacity: .75; }
+nav.plates a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.plate { display: flex; flex-direction: column; gap: 16px; }
+.plate-head { display: flex; flex-direction: column; gap: 4px; max-width: 80ch; }
+.plate-head p { margin: 0; color: var(--ink-soft); }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+@media (max-width: 900px) { .two { grid-template-columns: minmax(0, 1fr); } }
+.sheet {
+  background: var(--panel); border: 1.5px solid var(--ink); border-radius: 3px; box-shadow: 4px 4px 0 var(--rule);
+  padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0;
+}
+.sheet p { margin: 0; font-size: .9rem; }
+.note { color: var(--ink-soft); font-size: .86rem; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.between { justify-content: space-between; }
+canvas { display: block; width: 100%; max-width: 100%; touch-action: none; }
+canvas.drag { cursor: crosshair; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
+.stat { border-top: 1.5px dashed var(--rule); padding-top: 6px; display: flex; flex-direction: column; min-width: 0; }
+.stat .k { font-size: .74rem; color: var(--ink-soft); }
+.stat .v { font: 500 1rem var(--f-mono); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.btn {
+  font: 500 .84rem var(--f-ui); color: var(--ink); background: var(--panel);
+  border: 1.5px solid var(--ink); border-radius: 5px; padding: 5px 11px; cursor: pointer;
+}
+.btn[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
+.btn:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+input[type=range] { accent-color: var(--accent); flex: 1; min-width: 110px; }
+label.ctl { display: inline-flex; gap: 8px; align-items: center; font-size: .86rem; flex-wrap: wrap; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.think { border-left: 3px solid var(--hl); padding-left: 12px; display: flex; flex-direction: column; gap: 6px; }
+.think p { font-size: .9rem; }
+.hbars { display: flex; flex-direction: column; gap: 6px; }
+.hbar { display: grid; grid-template-columns: minmax(0, 11rem) minmax(0, 1fr) 4.2rem; gap: 8px; align-items: center; font-size: .82rem; }
+.hbar .tr { height: 16px; border: 1px solid var(--rule); border-radius: 2px; position: relative; }
+.hbar .fi { position: absolute; inset: 0 auto 0 0; background: var(--hl); }
+.hbar.best .fi { background: var(--warm); opacity: .8; }
+.hbar .val { font-family: var(--f-mono); text-align: right; font-variant-numeric: tabular-nums; }
+.sw { display: inline-block; width: 18px; height: 3px; vertical-align: middle; margin-right: 6px; }
+table { border-collapse: collapse; width: 100%; font-size: .84rem; }
+th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--rule); font-variant-numeric: tabular-nums; }
+th { font-weight: 600; color: var(--ink-soft); font-size: .76rem; }
+td.mono { font-family: var(--f-mono); }
+.tblwrap { overflow-x: auto; }
+footer { color: var(--ink-soft); font-size: .84rem; }
+footer a { color: var(--accent); }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow"><a class="atlas-link" href="https://claude.ai/artifact/MJNToqwPhwgnPb4pM8PDce" target="_blank" rel="noopener">Atlas des espaces d'états</a> · cahier 2</div>
+    <h1>Lois exponentielles</h1>
+    <p class="lede">La même fonction e<sup>−λt</sup> réapparaît partout : pour l'oubli, pour l'ignorance maximale, pour une géométrie plate, pour des horloges en course et pour la croissance. Cinq planches pour la regarder sous chacun de ces angles.</p>
+  </header>
+
+  <nav class="plates" aria-label="Planches">
+    <a href="#memoire" data-plate="memoire"><span class="n">PLANCHE 9</span><span class="t">La loi sans mémoire</span></a>
+    <a href="#entropie" data-plate="entropie"><span class="n">PLANCHE 10</span><span class="t">Le maximum d'entropie</span></a>
+    <a href="#droite" data-plate="droite"><span class="n">PLANCHE 11</span><span class="t">La droite cachée du simplexe</span></a>
+    <a href="#horloges" data-plate="horloges"><span class="n">PLANCHE 12</span><span class="t">Horloges en compétition</span></a>
+    <a href="#croissance" data-plate="croissance"><span class="n">PLANCHE 13</span><span class="t">Croissance et doublements</span></a>
+  </nav>
+
+  <!-- ============ PLANCHE 9 ============ -->
+  <section class="plate" id="p-memoire" hidden>
+    <div class="plate-head">
+      <h2>La loi sans mémoire</h2>
+      <p>400 atomes reçoivent chacun une durée de vie tirée d'une loi de moyenne 1. On attend jusqu'à l'âge s, on garde les survivants et on remet leur horloge à zéro. Leur avenir ressemble-t-il à celui d'atomes neufs ? Seule la loi exponentielle répond oui : P(T &gt; s + u | T &gt; s) = P(T &gt; u).</p>
+    </div>
+    <div class="row" role="group" aria-label="Loi des durées de vie">
+      <button class="btn" data-law="expo" aria-pressed="true">Exponentielle</button>
+      <button class="btn" data-law="w3" aria-pressed="false">Weibull k = 3 (usure)</button>
+      <button class="btn" data-law="w05" aria-pressed="false">Weibull k = 0,5 (rodage)</button>
+      <button class="btn" id="meNew">Nouveau tirage</button>
+    </div>
+    <div class="two">
+      <div class="sheet">
+        <div class="row between"><h3>La population</h3><button class="btn" id="mePlay" aria-pressed="true">❚❚ Pause</button></div>
+        <canvas id="cvAtoms" style="aspect-ratio: 1 / 1.08"></canvas>
+        <label class="ctl">âge d'observation s <input type="range" id="meS" min="0" max="2" step="0.01" value="0.8"><span class="mono" id="meSv"></span></label>
+        <div class="stats">
+          <div class="stat"><span class="k">survivants à s</span><span class="v" id="meN"></span></div>
+          <div class="stat"><span class="k">vie restante moyenne (observée)</span><span class="v" id="meR"></span></div>
+          <div class="stat"><span class="k">vie restante moyenne (théorie)</span><span class="v" id="meRt"></span></div>
+          <div class="stat"><span class="k">état nécessaire</span><span class="v" id="meState"></span></div>
+        </div>
+      </div>
+      <div class="sheet">
+        <h3>Survie et taux de risque</h3>
+        <canvas id="cvSurv" style="aspect-ratio: 1 / 1.08"></canvas>
+        <p class="note"><span class="sw" style="background:var(--ink)"></span>survie d'un atome neuf S(u) <span class="sw" style="background:var(--warm);margin-left:10px"></span>survie d'un survivant d'âge s, S(s + u) / S(s). Traits fins : les 400 atomes tirés.</p>
+      </div>
+    </div>
+    <div class="sheet think">
+      <h3>À observer</h3>
+      <p>Avec l'exponentielle, les deux courbes se superposent pour tout s, et le taux de risque h(t) est plat : à chaque instant, chaque atome a la même probabilité de se désintégrer, quel que soit son passé. Avec l'usure (k = 3), un survivant âgé a moins d'avenir qu'un neuf. Avec le rodage (k = 0,5), il en a plus : avoir tenu est un signe de solidité.</p>
+      <p>Retour à ta question « quelle partie du passé peut-on oublier ? ». Pour un atome, l'état tient en un bit : vivant ou non. Pour une pièce qui s'use, il faut aussi retenir son âge. La loi exponentielle est la seule loi continue pour laquelle l'âge n'apprend rien. C'est pourquoi elle est la brique des processus de Markov en temps continu.</p>
+    </div>
+  </section>
+
+  <!-- ============ PLANCHE 10 ============ -->
+  <section class="plate" id="p-entropie" hidden>
+    <div class="plate-head">
+      <h2>Le maximum d'entropie</h2>
+      <p>On ne connaît d'une loi que sa moyenne. Quelle loi supposer ? Celle qui ajoute le moins d'information, c'est-à-dire celle d'entropie maximale. Sur {0, 1, …, 9}, c'est une loi géométrique p<sub>n</sub> ∝ x<sup>n</sup> = e<sup>−βn</sup>, la version discrète de l'exponentielle.</p>
+    </div>
+    <div class="two">
+      <div class="sheet">
+        <div class="row between"><h3>Sculpte une loi</h3><span class="note">tire les barres</span></div>
+        <canvas id="cvSculpt" class="drag" style="aspect-ratio: 1.35 / 1"></canvas>
+        <div class="row">
+          <button class="btn" id="enRun" aria-pressed="false">▶ Laisser monter l'entropie</button>
+          <button class="btn" id="enReset">Forme de départ</button>
+        </div>
+        <div class="stats">
+          <div class="stat"><span class="k">moyenne</span><span class="v" id="enM"></span></div>
+          <div class="stat"><span class="k">H(ta loi)</span><span class="v" id="enH"></span></div>
+          <div class="stat"><span class="k">H(géométrique de même moyenne)</span><span class="v" id="enHt"></span></div>
+          <div class="stat"><span class="k">β de la cible</span><span class="v" id="enB"></span></div>
+        </div>
+        <p class="note">Barres jaunes : ta loi. Points orange : la loi géométrique de même moyenne. Le bouton mélange ta loi avec la cible, (1 − ε) p + ε p*. La moyenne ne bouge pas et H monte à chaque pas, par concavité.</p>
+      </div>
+      <div class="sheet">
+        <h3>Sur [0, ∞[, à moyenne 1</h3>
+        <canvas id="cvDens" style="aspect-ratio: 1.6 / 1"></canvas>
+        <div class="hbars" id="enBars"></div>
+        <p class="note">Entropies différentielles en nats, h = −∫ f ln f. Toutes ces lois ont la même moyenne 1. L'exponentielle l'emporte avec h = 1 + ln μ = 1.</p>
+      </div>
+    </div>
+    <div class="sheet think">
+      <h3>À observer</h3>
+      <p>Pousse la moyenne au-dessus de 4,5, le milieu de {0, …, 9}. La loi d'entropie maximale devient croissante, β devient négatif : ce sont les « températures négatives » de la planche 7, qui apparaissent quand l'espace des états est borné.</p>
+      <p>C'est le même théorème que pour la loi de Boltzmann. Fixer l'énergie moyenne et maximiser l'entropie donne p ∝ e<sup>−βE</sup>, et β est le multiplicateur de Lagrange de la contrainte. La température est le prix d'une unité d'énergie, mesuré en entropie.</p>
+    </div>
+  </section>
+
+  <!-- ============ PLANCHE 11 ============ -->
+  <section class="plate" id="p-droite" hidden>
+    <div class="plate-head">
+      <h2>La droite cachée du simplexe</h2>
+      <p>La courbe de Boltzmann de la planche 7 est courbe dans le triangle. Passons en coordonnées θ₁ = ln(p₂/p₁), θ₂ = ln(p₃/p₁) : elle devient une droite issue de l'origine, θ = −β (E₂, E₃). Les familles exponentielles sont plates dans ces coordonnées. C'est le point de départ de la géométrie de l'information.</p>
+    </div>
+    <div class="two">
+      <div class="sheet">
+        <div class="row between"><h3>Coordonnées p (le simplexe)</h3><span class="note">déplace A et B</span></div>
+        <canvas id="cvTri" class="drag" style="aspect-ratio: 1.1 / 1"></canvas>
+      </div>
+      <div class="sheet">
+        <div class="row between"><h3>Coordonnées θ = (ln p₂/p₁, ln p₃/p₁)</h3><span class="note">déplace A et B</span></div>
+        <canvas id="cvTheta" class="drag" style="aspect-ratio: 1.1 / 1"></canvas>
+      </div>
+    </div>
+    <div class="sheet">
+      <div class="row">
+        <label class="ctl">E₂ <input type="range" id="drE2" min="0" max="3" step="0.05" value="1"><span class="mono" id="drE2v"></span></label>
+        <label class="ctl">E₃ <input type="range" id="drE3" min="0" max="3" step="0.05" value="2"><span class="mono" id="drE3v"></span></label>
+      </div>
+      <p class="note"><span class="sw" style="background:var(--warm)"></span>famille de Boltzmann <span class="sw" style="background:var(--accent);margin-left:10px"></span>mélange (1 − t) A + t B <span class="sw" style="background:var(--ink);margin-left:10px"></span>mélange géométrique p ∝ A<sup>1−t</sup> B<sup>t</sup></p>
+      <div class="stats">
+        <div class="stat"><span class="k">A</span><span class="v" id="drA"></span></div>
+        <div class="stat"><span class="k">B</span><span class="v" id="drB"></span></div>
+        <div class="stat"><span class="k">D(A ‖ B)</span><span class="v" id="drKab"></span></div>
+        <div class="stat"><span class="k">D(B ‖ A)</span><span class="v" id="drKba"></span></div>
+      </div>
+      <div class="think">
+        <p>Il y a deux sortes de « lignes droites » entre A et B. Le mélange ordinaire est droit dans le triangle et courbe en θ. Le mélange géométrique est droit en θ et courbe dans le triangle. Aucune des deux n'est la vraie : c'est encore ta question 7, et ici les deux géométries sont duales l'une de l'autre (Amari).</p>
+        <p>L'écart naturel entre deux lois, la divergence de Kullback-Leibler, n'est pas symétrique : D(A ‖ B) ≠ D(B ‖ A). Comme le lien orienté entre deux pages web de ta discussion, cette dissymétrie ne tient pas dans une distance ordinaire. Les bords du triangle, où une probabilité s'annule, sont rejetés à l'infini en coordonnées θ.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PLANCHE 12 ============ -->
+  <section class="plate" id="p-horloges" hidden>
+    <div class="plate-head">
+      <h2>Horloges en compétition</h2>
+      <p>Trois horloges exponentielles indépendantes, de taux λ₁, λ₂, λ₃, sonnent chacune à un instant aléatoire. La première à sonner suit encore une loi exponentielle, de taux Λ = λ₁ + λ₂ + λ₃, et l'horloge i gagne avec probabilité λᵢ / Λ.</p>
+    </div>
+    <div class="two">
+      <div class="sheet">
+        <h3>Les courses</h3>
+        <div class="row">
+          <label class="ctl">λ₁ <input type="range" id="hcL1" min="0.1" max="3" step="0.05" value="1"><span class="mono" id="hcL1v"></span></label>
+          <label class="ctl">λ₂ <input type="range" id="hcL2" min="0.1" max="3" step="0.05" value="0.5"><span class="mono" id="hcL2v"></span></label>
+          <label class="ctl">λ₃ <input type="range" id="hcL3" min="0.1" max="3" step="0.05" value="0.25"><span class="mono" id="hcL3v"></span></label>
+        </div>
+        <canvas id="cvRace" style="aspect-ratio: 3 / 1"></canvas>
+        <div class="row">
+          <button class="btn" id="hcOne">Une course</button>
+          <button class="btn" id="hcMany">+ 1 000 courses</button>
+          <button class="btn" id="hcClear">Effacer</button>
+        </div>
+        <div class="tblwrap">
+          <table>
+            <thead><tr><th>horloge</th><th>λᵢ / Λ</th><th>victoires observées</th></tr></thead>
+            <tbody id="hcTable"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="sheet">
+        <h3>Instant de la première sonnerie</h3>
+        <canvas id="cvMin" style="aspect-ratio: 1.6 / 1"></canvas>
+        <div class="stats">
+          <div class="stat"><span class="k">Λ</span><span class="v" id="hcLam"></span></div>
+          <div class="stat"><span class="k">moyenne théorique 1/Λ</span><span class="v" id="hcMt"></span></div>
+          <div class="stat"><span class="k">moyenne observée</span><span class="v" id="hcMo"></span></div>
+          <div class="stat"><span class="k">courses</span><span class="v" id="hcN"></span></div>
+        </div>
+        <p class="note">Barres : histogramme des premières sonneries. Courbe : densité Λe<sup>−Λt</sup>.</p>
+      </div>
+    </div>
+    <div class="sheet">
+      <div class="row between">
+        <h3>Le paradoxe de l'autobus</h3>
+        <div class="row" role="group" aria-label="Horaires">
+          <button class="btn" data-bus="poisson" aria-pressed="true">Bus au hasard (Poisson)</button>
+          <button class="btn" data-bus="regular" aria-pressed="false">Bus réguliers</button>
+          <button class="btn" id="busAdd">+ 200 voyageurs</button>
+        </div>
+      </div>
+      <canvas id="cvBus" style="aspect-ratio: 5 / 1"></canvas>
+      <div class="stats">
+        <div class="stat"><span class="k">intervalle moyen entre deux bus</span><span class="v" id="busI"></span></div>
+        <div class="stat"><span class="k">intervalle moyen vécu par un voyageur</span><span class="v" id="busV"></span></div>
+        <div class="stat"><span class="k">attente moyenne</span><span class="v" id="busW"></span></div>
+        <div class="stat"><span class="k">voyageurs</span><span class="v" id="busN"></span></div>
+      </div>
+      <p class="note">Les bus passent en moyenne toutes les 10 minutes (3 heures affichées). Chaque point bleu est un voyageur arrivé au hasard, relié au bus qu'il prend.</p>
+    </div>
+    <div class="sheet think">
+      <h3>À observer</h3>
+      <p>Avec des bus au hasard, l'attente moyenne vaut 10 minutes et non 5. Un voyageur tombe plus souvent dans un long intervalle que dans un court, et l'intervalle qu'il vit dure en moyenne 20 minutes. Avec des bus réguliers, on retrouve 5 et 10. L'absence de mémoire explique le premier chiffre : à ton arrivée, le prochain bus ne sait pas depuis combien de temps le précédent est passé.</p>
+      <p>Les horloges en compétition sont le moteur des simulations de chaînes de Markov en temps continu (algorithme de Gillespie). Chaque transition possible a son horloge, la plus rapide décide de l'événement, et on recommence sans rien retenir du passé. Appliqué aux quatre spins de la planche 1, on obtient une dynamique d'Ising en temps continu.</p>
+    </div>
+  </section>
+
+  <!-- ============ PLANCHE 13 ============ -->
+  <section class="plate" id="p-croissance" hidden>
+    <div class="plate-head">
+      <h2>Croissance et doublements</h2>
+      <p>Une grandeur qui double à intervalle régulier suit y = y₀ · 2<sup>t/T₂</sup>. En échelle linéaire, on ne voit que la fin. En échelle logarithmique, c'est une droite de pente 1/T₂ doublement par an.</p>
+    </div>
+    <div class="two">
+      <div class="sheet">
+        <div class="row between">
+          <div class="row" role="group" aria-label="Série">
+            <button class="btn" data-ser="tr" aria-pressed="true">Transistors par puce</button>
+            <button class="btn" data-ser="data" aria-pressed="false">Données créées par an</button>
+          </div>
+          <button class="btn" id="grLog" aria-pressed="true">Échelle log</button>
+        </div>
+        <canvas id="cvGrowth" style="aspect-ratio: 1.3 / 1"></canvas>
+        <label class="ctl">ton modèle : doublement tous les <input type="range" id="grT2" min="0.5" max="6" step="0.05" value="2"><span class="mono" id="grT2v"></span></label>
+        <div class="stats">
+          <div class="stat"><span class="k">doublement ajusté</span><span class="v" id="grFit"></span></div>
+          <div class="stat"><span class="k">facteur sur la période</span><span class="v" id="grFac"></span></div>
+          <div class="stat"><span class="k">nombre de doublements</span><span class="v" id="grDbl"></span></div>
+        </div>
+        <p class="note" id="grSrc"></p>
+      </div>
+      <div class="sheet">
+        <h3>Combien de doublements depuis un bit ?</h3>
+        <div class="tblwrap">
+          <table>
+            <thead><tr><th>objet (voir <em>L'échelle de la donnée</em>)</th><th>taille</th><th>doublements depuis 1 bit</th></tr></thead>
+            <tbody id="grTable"></tbody>
+          </table>
+        </div>
+        <div class="think">
+          <p>Il suffit d'environ 80 doublements pour aller d'un bit à toutes les données créées sur Terre en 2025. C'est pourquoi l'échelle de la donnée se parcourt bien en puissances de 10 : une exponentielle couvre en peu d'étapes des ordres de grandeur que l'intuition linéaire ne peut pas tenir.</p>
+          <p>La décroissance radioactive est la même droite, descendante : N(t) = N₀ · 2<sup>−t/T½</sup>. La planche 9 en donne la raison microscopique. Chaque atome a un taux de risque constant, donc la population perd la même fraction à chaque instant. La forme exponentielle de la courbe vient de l'absence de mémoire de chaque atome.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>Cahier 1 : <a class="atlas-link" href="https://claude.ai/artifact/MJNToqwPhwgnPb4pM8PDce" target="_blank" rel="noopener">Atlas des espaces d'états, planches 1 à 8</a>. Les séries de la planche 13 sont des ordres de grandeur.</footer>
+</div>
+
+<script>
+// ================= Outils communs =================
+const $ = (id) => document.getElementById(id);
+const TAU = Math.PI * 2;
+const C = {}; let themeVersion = 0;
+function readTheme() { const s = getComputedStyle(document.documentElement); for (const k of ["paper", "panel", "ink", "ink-soft", "rule", "accent", "warm", "hl"]) C[k] = s.getPropertyValue("--" + k).trim(); themeVersion++; }
+readTheme();
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", readTheme);
+new MutationObserver(readTheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+function fit(cv) {
+  const w = cv.clientWidth, h = cv.clientHeight, d = Math.min(2, window.devicePixelRatio || 1);
+  if (cv._w !== w || cv._h !== h || cv._d !== d) { cv.width = Math.max(1, Math.round(w * d)); cv.height = Math.max(1, Math.round(h * d)); cv._w = w; cv._h = h; cv._d = d; }
+  const ctx = cv.getContext("2d"); ctx.setTransform(d, 0, 0, d, 0, 0); ctx.fillStyle = C.panel; ctx.fillRect(0, 0, w, h);
+  return { ctx, w, h, d };
+}
+function ptr(cv, e) { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
+function onDrag(cv, { down, move, up }) {
+  cv.addEventListener("pointerdown", (e) => { const [x, y] = ptr(cv, e); if (down && down(x, y) === false) return; cv._drag = true; cv.setPointerCapture(e.pointerId); e.preventDefault(); });
+  cv.addEventListener("pointermove", (e) => { if (cv._drag && move) { const [x, y] = ptr(cv, e); move(x, y); } });
+  const end = () => { if (cv._drag) { cv._drag = false; up && up(); } };
+  cv.addEventListener("pointerup", end); cv.addEventListener("pointercancel", end);
+}
+const HAND = (s = 15) => `700 ${s}px Kalam, cursive`;
+const MONO = (s = 12) => `${s}px "IBM Plex Mono", monospace`;
+function text(ctx, t, x, y, { font = MONO(), color = C.ink, align = "center", base = "middle" } = {}) { ctx.font = font; ctx.fillStyle = color; ctx.textAlign = align; ctx.textBaseline = base; ctx.fillText(t, x, y); }
+function dot(ctx, x, y, r, fill, stroke, lw = 1.5) { ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.stroke(); } }
+function line(ctx, x1, y1, x2, y2, color, lw = 1.5, dash = null) { ctx.beginPath(); ctx.setLineDash(dash || []); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.stroke(); ctx.setLineDash([]); }
+function poly(ctx, pts, color, lw = 2, dash = null) { ctx.beginPath(); ctx.setLineDash(dash || []); let on = false; for (const p of pts) { if (!p || !isFinite(p[0]) || !isFinite(p[1])) { on = false; continue; } if (!on) { ctx.moveTo(p[0], p[1]); on = true; } else ctx.lineTo(p[0], p[1]); } ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.stroke(); ctx.setLineDash([]); }
+const nf = (v, d = 2) => (Math.abs(v) < 5e-13 ? 0 : v).toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d });
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+function gammaFn(z) {
+  if (z < 0.5) return Math.PI / (Math.sin(Math.PI * z) * gammaFn(1 - z));
+  z -= 1; const c = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313, -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+  let x = c[0]; for (let i = 1; i < 9; i++) x += c[i] / (z + i); const t = z + 7.5;
+  return Math.sqrt(TAU) * Math.pow(t, z + 0.5) * Math.exp(-t) * x;
+}
+const expRand = (lam) => -Math.log(1 - Math.random()) / lam;
+// repère de tracé
+function plotArea(x0, y0, W, H, xr, yr, logY = false) {
+  const ty = (v) => (logY ? Math.log10(v) : v), a = ty(yr[0]), b = ty(yr[1]);
+  return { x0, y0, W, H, xr, yr, logY,
+    X: (x) => x0 + (x - xr[0]) / (xr[1] - xr[0]) * W,
+    Y: (y) => y0 + H - (ty(y) - a) / (b - a) * H,
+    iX: (px) => xr[0] + (px - x0) / W * (xr[1] - xr[0]),
+    iY: (py) => { const v = a + (y0 + H - py) / H * (b - a); return logY ? Math.pow(10, v) : v; } };
+}
+function frameAxes(ctx, P, { xt = [], yt = [], xl = "", yl = "", fy = (v) => nf(v, 1), fx = (v) => nf(v, 1) } = {}) {
+  xt.forEach((v) => { line(ctx, P.X(v), P.y0, P.X(v), P.y0 + P.H, C.rule, 1); text(ctx, fx(v), P.X(v), P.y0 + P.H + 12, { font: MONO(10), color: C["ink-soft"] }); });
+  yt.forEach((v) => { line(ctx, P.x0, P.Y(v), P.x0 + P.W, P.Y(v), C.rule, 1); text(ctx, fy(v), P.x0 - 5, P.Y(v), { font: MONO(10), color: C["ink-soft"], align: "right" }); });
+  ctx.strokeStyle = C.ink; ctx.lineWidth = 1.3; ctx.strokeRect(P.x0, P.y0, P.W, P.H);
+  if (xl) text(ctx, xl, P.x0 + P.W, P.y0 + P.H + 24, { font: HAND(14), color: C.ink, align: "right" });
+  if (yl) text(ctx, yl, P.x0 + 4, P.y0 - 9, { font: HAND(14), color: C.ink, align: "left" });
+}
+function clipTo(ctx, P, fn) { ctx.save(); ctx.beginPath(); ctx.rect(P.x0, P.y0, P.W, P.H); ctx.clip(); fn(); ctx.restore(); }
+
+// ================= Planche 9 : sans mémoire =================
+const ME = {
+  law: "expo", N: 400, life: [], t: 0, play: true, s: 0.8,
+  k() { return this.law === "expo" ? 1 : this.law === "w3" ? 3 : 0.5; },
+  c() { const k = this.k(); return 1 / gammaFn(1 + 1 / k); },
+  S(t) { return Math.exp(-Math.pow(Math.max(0, t) / this.c(), this.k())); },
+  h(t) { const k = this.k(), c = this.c(); return k / c * Math.pow(Math.max(t, 1e-6) / c, k - 1); },
+  resample() { const k = this.k(), c = this.c(); this.life = Array.from({ length: this.N }, () => c * Math.pow(-Math.log(1 - Math.random()), 1 / k)); this.t = 0; },
+  meanResidualTheory(s) { const Ss = this.S(s); if (Ss < 1e-12) return NaN; let acc = 0; const du = 0.002; for (let u = 0; u < 40; u += du) acc += this.S(s + u + du / 2) * du; return acc / Ss; },
+  init() {
+    document.querySelectorAll("[data-law]").forEach((b) => b.addEventListener("click", () => { this.law = b.dataset.law; document.querySelectorAll("[data-law]").forEach((o) => o.setAttribute("aria-pressed", String(o === b))); this.resample(); }));
+    $("meNew").addEventListener("click", () => this.resample());
+    $("mePlay").addEventListener("click", (e) => { this.play = !this.play; e.currentTarget.setAttribute("aria-pressed", this.play); e.currentTarget.textContent = this.play ? "❚❚ Pause" : "▶ Lancer le temps"; });
+    $("meS").addEventListener("input", (e) => { this.s = parseFloat(e.target.value); });
+    this.resample();
+  },
+  frame(dt) {
+    if (this.play) { this.t += dt * 0.45; if (this.t > 3.2) this.t = 0; }
+    const s = this.s, t = this.t;
+    // population
+    { const { ctx, w, h } = fit($("cvAtoms")); const n = 20, pad = 14, top = 10, gs = Math.min(w - 2 * pad, h - 70) / n, ox = (w - gs * n) / 2;
+      this.life.forEach((L, i) => {
+        const x = ox + (i % n + 0.5) * gs, y = top + (Math.floor(i / n) + 0.5) * gs, alive = L > t;
+        const survS = t >= s && L > s;
+        if (alive) dot(ctx, x, y, gs * 0.34, C.hl, survS ? C.accent : C.ink, survS ? 2 : 1);
+        else dot(ctx, x, y, gs * 0.14, survS ? C.accent : C.rule, null);
+      });
+      // frise du temps
+      const P = plotArea(ox, top + gs * n + 14, gs * n, 10, [0, 3.2], [0, 1]);
+      line(ctx, P.X(0), P.y0 + 5, P.X(3.2), P.y0 + 5, C.ink, 1.5);
+      line(ctx, P.X(s), P.y0 - 2, P.X(s), P.y0 + 12, C.warm, 2.5);
+      text(ctx, "s", P.X(s), P.y0 + 24, { font: HAND(14), color: C.warm });
+      dot(ctx, P.X(Math.min(t, 3.2)), P.y0 + 5, 6, C.accent, C.ink);
+      const alive = this.life.filter((L) => L > t).length;
+      text(ctx, `t = ${nf(t, 2)} · ${alive} atomes en vie`, ox, P.y0 + 40, { font: MONO(12), color: C["ink-soft"], align: "left" });
+      if (t >= s) text(ctx, "cerclés en bleu : les survivants à s", ox + gs * n, P.y0 + 40, { font: HAND(13), color: C.accent, align: "right" });
+    }
+    // survie et risque
+    { const { ctx, w, h } = fit($("cvSurv")); const l = 42, r = 12, H1 = (h - 70) * 0.6, H2 = (h - 70) * 0.4;
+      const P = plotArea(l, 18, w - l - r, H1, [0, 3], [0, 1]);
+      frameAxes(ctx, P, { xt: [0, 1, 2, 3], yt: [0, 0.5, 1], yl: "survie", fx: (v) => String(v) });
+      clipTo(ctx, P, () => {
+        const us = Array.from({ length: 151 }, (_, i) => i * 0.02);
+        // empiriques
+        const sorted = [...this.life].sort((a, b) => a - b);
+        const emp = (arr) => { const pts = [[P.X(0), P.Y(1)]]; arr.forEach((v, i) => { const y = 1 - i / arr.length; pts.push([P.X(v), P.Y(y)], [P.X(v), P.Y(1 - (i + 1) / arr.length)]); }); return pts; };
+        poly(ctx, emp(sorted), C.ink, 0.8);
+        const resid = this.life.filter((L) => L > s).map((L) => L - s).sort((a, b) => a - b);
+        if (resid.length) poly(ctx, emp(resid), C.warm, 0.8);
+        poly(ctx, us.map((u) => [P.X(u), P.Y(this.S(u))]), C.ink, 2.6);
+        const Ss = this.S(s); poly(ctx, us.map((u) => [P.X(u), P.Y(this.S(s + u) / Ss)]), C.warm, 2.6, this.law === "expo" ? [7, 5] : null);
+      });
+      text(ctx, "u (temps depuis la remise à zéro)", P.x0 + P.W, P.y0 + P.H + 24, { font: HAND(13), color: C["ink-soft"], align: "right" });
+      const Q = plotArea(l, 18 + H1 + 44, w - l - r, H2, [0, 3], [0, 4]);
+      frameAxes(ctx, Q, { xt: [0, 1, 2, 3], yt: [0, 2, 4], yl: "taux de risque h(t)", fx: (v) => String(v), fy: (v) => String(v) });
+      clipTo(ctx, Q, () => {
+        poly(ctx, Array.from({ length: 151 }, (_, i) => { const tt = i * 0.02; return [Q.X(tt), Q.Y(this.h(tt))]; }), C.accent, 2.4);
+        line(ctx, Q.X(s), Q.y0, Q.X(s), Q.y0 + Q.H, C.warm, 1.5, [4, 4]);
+        dot(ctx, Q.X(s), Q.Y(Math.min(4, this.h(s))), 5, C.warm, C.ink);
+      });
+      text(ctx, "t", Q.x0 + Q.W, Q.y0 + Q.H + 24, { font: HAND(13), color: C["ink-soft"], align: "right" });
+    }
+    const surv = this.life.filter((L) => L > s);
+    $("meSv").textContent = nf(s, 2);
+    $("meN").textContent = `${surv.length} / ${this.N}`;
+    $("meR").textContent = surv.length ? nf(surv.reduce((a, L) => a + L - s, 0) / surv.length, 2) : "—";
+    $("meRt").textContent = nf(this.meanResidualTheory(s), 2) + " (neuf : 1,00)";
+    $("meState").textContent = this.law === "expo" ? "vivant ou non (1 bit)" : "vivant + âge";
+  },
+};
+
+// ================= Planche 10 : maximum d'entropie =================
+const EN = {
+  K: 10, start: [0.04, 0.22, 0.05, 0.05, 0.2, 0.04, 0.04, 0.24, 0.06, 0.06], w: null, run: false,
+  p() { const s = this.w.reduce((a, b) => a + b, 0); return this.w.map((v) => v / s); },
+  mean(p) { return p.reduce((a, v, n) => a + v * n, 0); },
+  H(p) { return -p.reduce((a, v) => a + (v > 1e-15 ? v * Math.log2(v) : 0), 0); },
+  geo(beta) { const w = Array.from({ length: this.K }, (_, n) => Math.exp(-beta * n)); const s = w.reduce((a, b) => a + b, 0); return w.map((v) => v / s); },
+  target(m) { let lo = -12, hi = 12; for (let i = 0; i < 80; i++) { const mid = (lo + hi) / 2; if (this.mean(this.geo(mid)) > m) lo = mid; else hi = mid; } const b = (lo + hi) / 2; return { beta: b, p: this.geo(b) }; },
+  area(w, h) { return plotArea(40, 22, w - 52, h - 56, [-0.5, this.K - 0.5], [0, 0.6]); },
+  init() {
+    this.w = [...this.start];
+    const cv = $("cvSculpt");
+    const set = (x, y) => { const P = this.area(cv.clientWidth, cv.clientHeight); const n = Math.round(P.iX(x)); if (n < 0 || n >= this.K) return;
+      const target = Math.max(0.002, Math.min(0.6, P.iY(y))); const p = this.p();
+      // fixe p_n = target et redistribue le reste proportionnellement
+      const rest = 1 - p[n]; this.w = p.map((v, i) => (i === n ? target : rest > 1e-9 ? v / rest * (1 - target) : (1 - target) / (this.K - 1))); };
+    onDrag(cv, { down: (x, y) => { this.stop(); set(x, y); }, move: set });
+    $("enRun").addEventListener("click", (e) => { this.run = !this.run; e.currentTarget.setAttribute("aria-pressed", this.run); e.currentTarget.textContent = this.run ? "❚❚ Arrêter" : "▶ Laisser monter l'entropie"; });
+    $("enReset").addEventListener("click", () => { this.stop(); this.w = [...this.start]; });
+    // lois continues de moyenne 1
+    const g = 0.5772156649, lamW = 1 / gammaFn(1.5), sig = Math.sqrt(Math.PI / 2);
+    this.cont = [
+      { n: "exponentielle", f: (x) => Math.exp(-x), h: 1, col: "warm" },
+      { n: "demi-normale", f: (x) => 2 / (sig * Math.sqrt(TAU)) * Math.exp(-x * x / (2 * sig * sig)), h: 0.5 * Math.log(Math.PI * Math.E * sig * sig / 2), col: "accent" },
+      { n: "gamma (k = 2)", f: (x) => 4 * x * Math.exp(-2 * x), h: 2 + Math.log(0.5) - (1 - g), col: "ink" },
+      { n: "Weibull (k = 2)", f: (x) => 2 / lamW * (x / lamW) * Math.exp(-((x / lamW) ** 2)), h: g * 0.5 + Math.log(lamW / 2) + 1, col: "ink-soft" },
+      { n: "uniforme sur [0, 2]", f: (x) => (x <= 2 ? 0.5 : 0), h: Math.log(2), col: "hl" },
+    ];
+    const box = $("enBars"); const hmax = 1;
+    this.cont.forEach((c, i) => { const row = document.createElement("div"); row.className = "hbar" + (i === 0 ? " best" : "");
+      row.innerHTML = `<span><span class="sw" style="background:var(--${c.col})"></span>${c.n}</span><span class="tr"><span class="fi" style="width:${(c.h / hmax * 100).toFixed(1)}%"></span></span><span class="val">${nf(c.h, 3)}</span>`; box.appendChild(row); });
+  },
+  stop() { if (this.run) $("enRun").click(); },
+  frame(dt) {
+    let p = this.p(); const m = this.mean(p), tg = this.target(m);
+    if (this.run) { const eps = Math.min(1, dt * 1.5); this.w = p.map((v, i) => (1 - eps) * v + eps * tg.p[i]); p = this.p(); }
+    { const { ctx, w, h } = fit($("cvSculpt")); const P = this.area(w, h);
+      frameAxes(ctx, P, { yt: [0, 0.2, 0.4, 0.6], yl: "pₙ", fy: (v) => nf(v, 1) });
+      const bw = P.W / this.K * 0.62;
+      p.forEach((v, n) => { const x = P.X(n); ctx.fillStyle = C.hl; ctx.fillRect(x - bw / 2, P.Y(v), bw, P.Y(0) - P.Y(v)); ctx.strokeStyle = C.ink; ctx.lineWidth = 1.3; ctx.strokeRect(x - bw / 2, P.Y(v), bw, P.Y(0) - P.Y(v)); text(ctx, String(n), x, P.y0 + P.H + 12, { font: MONO(11), color: C["ink-soft"] }); });
+      poly(ctx, tg.p.map((v, n) => [P.X(n), P.Y(v)]), C.warm, 1.5, [4, 4]);
+      tg.p.forEach((v, n) => dot(ctx, P.X(n), P.Y(v), 4.5, C.warm, C.panel, 1.5));
+      line(ctx, P.X(m), P.y0, P.X(m), P.y0 + P.H, C.accent, 1.5, [3, 4]);
+      text(ctx, "moyenne", P.X(m) + 4, P.y0 + 10, { font: HAND(13), color: C.accent, align: "left" });
+    }
+    { const { ctx, w, h } = fit($("cvDens")); const P = plotArea(40, 18, w - 52, h - 48, [0, 4], [0, 1.6]);
+      frameAxes(ctx, P, { xt: [0, 1, 2, 3, 4], yt: [0, 0.5, 1, 1.5], yl: "densité", fx: (v) => String(v) });
+      clipTo(ctx, P, () => { [...this.cont].reverse().forEach((c) => poly(ctx, Array.from({ length: 401 }, (_, i) => { const x = i * 0.01; return [P.X(x), P.Y(c.f(x))]; }), C[c.col], c.n === "exponentielle" ? 3 : 1.8)); });
+      line(ctx, P.X(1), P.y0, P.X(1), P.y0 + P.H, C["ink-soft"], 1, [3, 4]);
+      text(ctx, "moyenne 1", P.X(1) + 4, P.y0 + 10, { font: HAND(13), color: C["ink-soft"], align: "left" });
+    }
+    $("enM").textContent = nf(m, 2); $("enH").textContent = nf(this.H(p), 3) + " bit";
+    $("enHt").textContent = nf(this.H(tg.p), 3) + " bit"; $("enB").textContent = nf(tg.beta, 3) + (tg.beta < -1e-3 ? " (négatif)" : "");
+  },
+};
+
+// ================= Planche 11 : droite cachée =================
+const DR = {
+  A: [0.7, 0.2, 0.1], B: [0.1, 0.3, 0.6], E: [0, 1, 2], drag: null,
+  tri(w, h) { const m = 40; const s = Math.min(w - 2 * m, (h - 2 * m) / 0.866); const cx = w / 2, top = (h - s * 0.866) / 2; return [[cx, top], [cx - s / 2, top + s * 0.866], [cx + s / 2, top + s * 0.866]]; },
+  toXY(V, p) { return [p[0] * V[0][0] + p[1] * V[1][0] + p[2] * V[2][0], p[0] * V[0][1] + p[1] * V[1][1] + p[2] * V[2][1]]; },
+  toP(V, x, y) { const [[x1, y1], [x2, y2], [x3, y3]] = V; const det = (y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3); const l1 = ((y2 - y3) * (x - x3) + (x3 - x2) * (y - y3)) / det, l2 = ((y3 - y1) * (x - x3) + (x1 - x3) * (y - y3)) / det; return [l1, l2, 1 - l1 - l2]; },
+  clampP(p) { const q = p.map((v) => Math.max(0.004, v)); const s = q[0] + q[1] + q[2]; return q.map((v) => v / s); },
+  th(p) { return [Math.log(p[1] / p[0]), Math.log(p[2] / p[0])]; },
+  fromTh([a, b]) { const w = [1, Math.exp(a), Math.exp(b)]; const s = w[0] + w[1] + w[2]; return w.map((v) => v / s); },
+  thArea(w, h) { const m = 34, S = Math.min(w, h) - 2 * m; return plotArea((w - S) / 2, (h - S) / 2, S, S, [-6, 6], [-6, 6]); },
+  boltz(beta) { const w = this.E.map((e) => Math.exp(-beta * e)); const s = w.reduce((a, b) => a + b, 0); return w.map((v) => v / s); },
+  mix(t) { return this.A.map((a, i) => (1 - t) * a + t * this.B[i]); },
+  gmix(t) { const w = this.A.map((a, i) => Math.pow(a, 1 - t) * Math.pow(this.B[i], t)); const s = w.reduce((x, y) => x + y, 0); return w.map((v) => v / s); },
+  KL(p, q) { return p.reduce((a, v, i) => a + v * Math.log(v / q[i]), 0); },
+  init() {
+    const cvT = $("cvTri"), cvH = $("cvTheta");
+    const pick = (pts, x, y) => { const dA = Math.hypot(pts[0][0] - x, pts[0][1] - y), dB = Math.hypot(pts[1][0] - x, pts[1][1] - y); return dA <= dB ? "A" : "B"; };
+    const setT = (x, y) => { const V = this.tri(cvT.clientWidth, cvT.clientHeight); this[this.drag] = this.clampP(this.toP(V, x, y)); };
+    onDrag(cvT, { down: (x, y) => { const V = this.tri(cvT.clientWidth, cvT.clientHeight); this.drag = pick([this.toXY(V, this.A), this.toXY(V, this.B)], x, y); setT(x, y); }, move: setT });
+    const setH = (x, y) => { const P = this.thArea(cvH.clientWidth, cvH.clientHeight); const a = Math.max(-6, Math.min(6, P.iX(x))), b = Math.max(-6, Math.min(6, P.iY(y))); this[this.drag] = this.clampP(this.fromTh([a, b])); };
+    onDrag(cvH, { down: (x, y) => { const P = this.thArea(cvH.clientWidth, cvH.clientHeight); const f = (p) => { const t = this.th(p); return [P.X(t[0]), P.Y(t[1])]; }; this.drag = pick([f(this.A), f(this.B)], x, y); setH(x, y); }, move: setH });
+    const upd = () => { this.E[1] = parseFloat($("drE2").value); this.E[2] = parseFloat($("drE3").value); $("drE2v").textContent = nf(this.E[1], 2); $("drE3v").textContent = nf(this.E[2], 2); };
+    ["drE2", "drE3"].forEach((id) => $(id).addEventListener("input", upd)); upd();
+  },
+  frame() {
+    const ts = Array.from({ length: 101 }, (_, i) => i / 100);
+    const betas = Array.from({ length: 241 }, (_, i) => -12 + i * 0.1);
+    { const { ctx, w, h } = fit($("cvTri")); const V = this.tri(w, h);
+      ctx.beginPath(); ctx.moveTo(...V[0]); ctx.lineTo(...V[1]); ctx.lineTo(...V[2]); ctx.closePath(); ctx.fillStyle = C.paper; ctx.fill(); ctx.strokeStyle = C.ink; ctx.lineWidth = 2; ctx.stroke();
+      poly(ctx, betas.map((b) => this.toXY(V, this.boltz(b))), C.warm, 2.4);
+      poly(ctx, ts.map((t) => this.toXY(V, this.mix(t))), C.accent, 2.6);
+      poly(ctx, ts.map((t) => this.toXY(V, this.gmix(t))), C.ink, 2, [6, 5]);
+      const c = this.toXY(V, [1 / 3, 1 / 3, 1 / 3]); dot(ctx, c[0], c[1], 3, C.ink);
+      text(ctx, "p₁ = 1", V[0][0], V[0][1] - 14, { font: HAND(14), color: C.ink });
+      text(ctx, "p₂ = 1", V[1][0], V[1][1] + 18, { font: HAND(14), color: C.ink, align: "left" });
+      text(ctx, "p₃ = 1", V[2][0], V[2][1] + 18, { font: HAND(14), color: C.ink, align: "right" });
+      [["A", this.A], ["B", this.B]].forEach(([n, p]) => { const [x, y] = this.toXY(V, p); dot(ctx, x, y, 8, C.hl, C.ink, 2); text(ctx, n, x + 13, y - 11, { font: HAND(17), color: C.ink }); });
+    }
+    { const { ctx, w, h } = fit($("cvTheta")); const P = this.thArea(w, h);
+      frameAxes(ctx, P, { xt: [-6, -3, 0, 3, 6], yt: [-6, -3, 0, 3, 6], fx: (v) => String(v).replace("-", "−"), fy: (v) => String(v).replace("-", "−") });
+      line(ctx, P.X(0), P.y0, P.X(0), P.y0 + P.H, C["ink-soft"], 1.2); line(ctx, P.x0, P.Y(0), P.x0 + P.W, P.Y(0), C["ink-soft"], 1.2);
+      text(ctx, "θ₁", P.x0 + P.W - 4, P.Y(0) - 10, { font: HAND(15), color: C.ink, align: "right" });
+      text(ctx, "θ₂", P.X(0) + 8, P.y0 + 10, { font: HAND(15), color: C.ink, align: "left" });
+      const f = (p) => { const t = this.th(p); return [P.X(t[0]), P.Y(t[1])]; };
+      clipTo(ctx, P, () => {
+        poly(ctx, betas.map((b) => [P.X(-b * this.E[1]), P.Y(-b * this.E[2])]), C.warm, 2.4);
+        poly(ctx, ts.map((t) => f(this.mix(t))), C.accent, 2.6);
+        poly(ctx, ts.map((t) => f(this.gmix(t))), C.ink, 2, [6, 5]);
+      });
+      dot(ctx, P.X(0), P.Y(0), 3, C.ink); text(ctx, "β = 0", P.X(0) + 6, P.Y(0) + 12, { font: MONO(10), color: C.ink, align: "left" });
+      [["A", this.A], ["B", this.B]].forEach(([n, p]) => { const [x, y] = f(p); dot(ctx, x, y, 8, C.hl, C.ink, 2); text(ctx, n, x + 13, y - 11, { font: HAND(17), color: C.ink }); });
+    }
+    const fp = (p) => p.map((v) => nf(v, 2)).join(" · ");
+    $("drA").textContent = fp(this.A); $("drB").textContent = fp(this.B);
+    $("drKab").textContent = nf(this.KL(this.A, this.B), 3) + " nat"; $("drKba").textContent = nf(this.KL(this.B, this.A), 3) + " nat";
+  },
+};
+
+// ================= Planche 12 : horloges =================
+const HC = {
+  lam: [1, 0.5, 0.25], race: null, rt: 0, mins: [], wins: [0, 0, 0],
+  cols() { return [C.accent, C.warm, C.ink]; },
+  Lam() { return this.lam[0] + this.lam[1] + this.lam[2]; },
+  record(times) { const m = Math.min(...times); this.mins.push(m); if (this.mins.length > 60000) this.mins.shift(); this.wins[times.indexOf(m)]++; },
+  init() {
+    [1, 2, 3].forEach((i) => $("hcL" + i).addEventListener("input", (e) => { this.lam[i - 1] = parseFloat(e.target.value); this.clear(); }));
+    $("hcOne").addEventListener("click", () => { const times = this.lam.map((l) => expRand(l)); this.race = times; this.rt = 0; this.record(times); });
+    $("hcMany").addEventListener("click", () => { for (let k = 0; k < 1000; k++) this.record(this.lam.map((l) => expRand(l))); });
+    $("hcClear").addEventListener("click", () => this.clear());
+    BUS.init();
+  },
+  clear() { this.mins = []; this.wins = [0, 0, 0]; this.race = null; },
+  frame(dt) {
+    const cols = this.cols(), L = this.Lam();
+    [1, 2, 3].forEach((i) => $("hcL" + i + "v").textContent = nf(this.lam[i - 1], 2));
+    { const { ctx, w, h } = fit($("cvRace")); const x0 = 70, W = w - x0 - 16, tmax = 4, X = (t) => x0 + Math.min(t, tmax) / tmax * W;
+      for (let k = 0; k <= tmax; k++) { line(ctx, X(k), 8, X(k), h - 16, C.rule, 1); text(ctx, String(k), X(k), h - 7, { font: MONO(10), color: C["ink-soft"] }); }
+      if (this.race) this.rt += dt * 1.2;
+      const winner = this.race ? this.race.indexOf(Math.min(...this.race)) : -1;
+      [0, 1, 2].forEach((i) => {
+        const y = 14 + i * (h - 34) / 3 + (h - 34) / 6;
+        text(ctx, `λ${"₁₂₃"[i]} = ${nf(this.lam[i], 2)}`, 6, y, { font: MONO(11), color: cols[i], align: "left" });
+        line(ctx, x0, y, x0 + W, y, C.rule, 1.5);
+        if (this.race) {
+          const T = this.race[i]; line(ctx, x0, y, X(Math.min(this.rt, T)), y, cols[i], 5);
+          if (this.rt >= T) { dot(ctx, X(T), y, i === winner ? 9 : 6, i === winner ? C.hl : C.panel, cols[i], 2.5); if (T > tmax) text(ctx, "→", x0 + W - 4, y - 12, { font: MONO(12), color: cols[i] }); }
+          if (i === winner && this.rt >= T) text(ctx, "première !", Math.min(X(T) + 14, x0 + W - 60), y - 14, { font: HAND(14), color: cols[i], align: "left" });
+        }
+      });
+      if (!this.race) text(ctx, "« Une course » lance les trois horloges", x0 + W / 2, h / 2, { font: HAND(16), color: C["ink-soft"] });
+    }
+    { const { ctx, w, h } = fit($("cvMin")); const tmax = 4 / L, bins = 30, bw = tmax / bins;
+      const cnt = new Array(bins).fill(0); this.mins.forEach((m) => { const b = Math.floor(m / bw); if (b < bins) cnt[b]++; });
+      const n = this.mins.length, ymax = L * 1.15;
+      const P = plotArea(42, 16, w - 54, h - 46, [0, tmax], [0, ymax]);
+      frameAxes(ctx, P, { xt: [0, 1, 2, 3, 4].map((k) => k / L), yt: [0, L / 2, L], fx: (v) => nf(v, 2), fy: (v) => nf(v, 2), yl: "densité" });
+      clipTo(ctx, P, () => {
+        if (n) cnt.forEach((c, b) => { const d = c / (n * bw); ctx.fillStyle = C.hl; ctx.fillRect(P.X(b * bw) + 1, P.Y(d), P.X(bw) - P.X(0) - 2, P.Y(0) - P.Y(d)); });
+        poly(ctx, Array.from({ length: 201 }, (_, i) => { const t = i / 200 * tmax; return [P.X(t), P.Y(L * Math.exp(-L * t))]; }), C.warm, 2.6);
+      });
+      text(ctx, "t", P.x0 + P.W, P.y0 + P.H + 24, { font: HAND(13), color: C["ink-soft"], align: "right" });
+    }
+    const n = this.mins.length, tot = this.wins[0] + this.wins[1] + this.wins[2];
+    $("hcLam").textContent = nf(L, 2); $("hcMt").textContent = nf(1 / L, 3);
+    $("hcMo").textContent = n ? nf(this.mins.reduce((a, b) => a + b, 0) / n, 3) : "—"; $("hcN").textContent = n.toLocaleString("fr-FR");
+    $("hcTable").innerHTML = [0, 1, 2].map((i) => `<tr><td class="mono" style="color:${cols[i]}">horloge ${i + 1}</td><td class="mono">${nf(this.lam[i] / L * 100, 1)} %</td><td class="mono">${tot ? nf(this.wins[i] / tot * 100, 1) + " %" : "—"}</td></tr>`).join("");
+    BUS.frame();
+  },
+};
+const BUS = {
+  mode: "poisson", mean: 10, T: 300000, buses: [], shown: [], sumW: 0, sumI: 0, n: 0,
+  gen() {
+    const b = []; if (this.mode === "poisson") { let t = 0; while (t < this.T) { t += expRand(1 / this.mean); b.push(t); } }
+    else { let t = Math.random() * this.mean; while (t < this.T) { b.push(t); t += this.mean; } }
+    this.buses = b; this.shown = []; this.sumW = 0; this.sumI = 0; this.n = 0;
+  },
+  next(a) { let lo = 0, hi = this.buses.length - 1; while (lo < hi) { const m = (lo + hi) >> 1; if (this.buses[m] < a) lo = m + 1; else hi = m; } return lo; },
+  add(k) {
+    for (let i = 0; i < k; i++) { const a = 200 + Math.random() * (this.T - 400), j = this.next(a); this.sumW += this.buses[j] - a; this.sumI += this.buses[j] - this.buses[j - 1]; this.n++; }
+    for (let i = 0; i < 12; i++) { const a = Math.random() * 180; this.shown.push(a); } if (this.shown.length > 60) this.shown.splice(0, this.shown.length - 60);
+  },
+  init() {
+    document.querySelectorAll("[data-bus]").forEach((b) => b.addEventListener("click", () => { this.mode = b.dataset.bus; document.querySelectorAll("[data-bus]").forEach((o) => o.setAttribute("aria-pressed", String(o === b))); this.gen(); this.add(200); }));
+    $("busAdd").addEventListener("click", () => this.add(200));
+    this.gen(); this.add(200);
+  },
+  frame() {
+    const { ctx, w, h } = fit($("cvBus")); const x0 = 14, W = w - 28, X = (t) => x0 + t / 180 * W, y = h * 0.66;
+    const vis = this.buses.filter((t) => t <= 185);
+    line(ctx, x0, y, x0 + W, y, C.ink, 1.5);
+    for (let m = 0; m <= 180; m += 30) text(ctx, m + " min", X(m), h - 8, { font: MONO(10), color: C["ink-soft"], align: m === 0 ? "left" : m === 180 ? "right" : "center" });
+    vis.forEach((t, i) => { if (i % 2 === 0 && vis[i + 1] !== undefined) { ctx.fillStyle = C.rule; ctx.globalAlpha = 0.6; ctx.fillRect(X(t), y - 10, X(Math.min(180, vis[i + 1])) - X(t), 20); ctx.globalAlpha = 1; } });
+    vis.forEach((t) => { if (t <= 180) { line(ctx, X(t), y - 14, X(t), y + 14, C.ink, 2.5); } });
+    this.shown.forEach((a, k) => { const j = this.next(a); const nb = this.buses[j]; const yy = y - 22 - (k % 6) * 7;
+      line(ctx, X(a), yy, X(Math.min(nb, 181)), yy, C.accent, 1.2); dot(ctx, X(a), yy, 3.2, C.accent); });
+    const intervals = (this.buses[this.buses.length - 1] - this.buses[0]) / (this.buses.length - 1);
+    $("busI").textContent = nf(intervals, 1) + " min";
+    $("busV").textContent = this.n ? nf(this.sumI / this.n, 1) + " min" : "—";
+    $("busW").textContent = this.n ? nf(this.sumW / this.n, 1) + " min" : "—";
+    $("busN").textContent = this.n.toLocaleString("fr-FR");
+  },
+};
+
+// ================= Planche 13 : croissance =================
+const GR = {
+  ser: "tr", log: true, T2: 2,
+  S: {
+    tr: { unit: "transistors", pts: [[1971, 2300, "Intel 4004"], [1978, 29000, "Intel 8086"], [1993, 3.1e6, "Pentium"], [2006, 2.91e8, "Core 2 Duo"], [2020, 1.6e10, "Apple M1"], [2023, 1.34e11, "M2 Ultra"]], xr: [1968, 2027],
+      src: "Nombre de transistors de quelques processeurs grand public (ordres de grandeur)." },
+    data: { unit: "Zo", pts: [[2010, 2, ""], [2015, 15.5, ""], [2020, 64.2, ""], [2025, 181, "prévision"]], xr: [2008, 2027],
+      src: "Volume mondial de données créées, copiées ou consommées par an, en zettaoctets (estimations et prévision IDC, ordres de grandeur)." },
+  },
+  fit() { const P = this.S[this.ser].pts, n = P.length; const xs = P.map((p) => p[0]), ys = P.map((p) => Math.log2(p[1]));
+    const mx = xs.reduce((a, b) => a + b, 0) / n, my = ys.reduce((a, b) => a + b, 0) / n;
+    const b = xs.reduce((a, x, i) => a + (x - mx) * (ys[i] - my), 0) / xs.reduce((a, x) => a + (x - mx) ** 2, 0); return { b, a: my - b * mx }; },
+  fmtBig(v) { if (v >= 1e9) return nf(v / 1e9, v >= 1e10 ? 0 : 1) + " milliards"; if (v >= 1e6) return nf(v / 1e6, 1) + " millions"; return Math.round(v).toLocaleString("fr-FR"); },
+  init() {
+    document.querySelectorAll("[data-ser]").forEach((b) => b.addEventListener("click", () => { this.ser = b.dataset.ser; document.querySelectorAll("[data-ser]").forEach((o) => o.setAttribute("aria-pressed", String(o === b))); $("grT2").value = this.ser === "tr" ? 2 : 2.5; this.T2 = parseFloat($("grT2").value); }));
+    $("grLog").addEventListener("click", (e) => { this.log = !this.log; e.currentTarget.setAttribute("aria-pressed", this.log); e.currentTarget.textContent = this.log ? "Échelle log" : "Échelle linéaire"; });
+    $("grT2").addEventListener("input", (e) => { this.T2 = parseFloat(e.target.value); });
+    const rows = [["1 octet", 1], ["un SMS", 140], ["une photo", 3e6], ["un génome humain", 7.75e8], ["un SSD de 1 To", 1e12], ["les archives du CERN", 1e18], ["toutes les données de 2025", 1.8e23]];
+    $("grTable").innerHTML = rows.map(([n, b]) => `<tr><td>${n}</td><td class="mono">${b < 1e3 ? b + " o" : b.toExponential(1).replace(".", ",").replace("e+", " × 10^") + " o"}</td><td class="mono">${nf(Math.log2(b * 8), 1)}</td></tr>`).join("");
+  },
+  frame() {
+    const s = this.S[this.ser], pts = s.pts, fitr = this.fit();
+    const ymin = this.log ? Math.min(...pts.map((p) => p[1])) / 4 : 0, ymax = Math.max(...pts.map((p) => p[1])) * (this.log ? 4 : 1.15);
+    const { ctx, w, h } = fit($("cvGrowth"));
+    const P = plotArea(64, 22, w - 80, h - 56, s.xr, [ymin, ymax], this.log);
+    const yt = [];
+    if (this.log) { for (let e = Math.ceil(Math.log10(ymin)); e <= Math.log10(ymax); e++) yt.push(Math.pow(10, e)); }
+    else { const step = Math.pow(10, Math.floor(Math.log10(ymax))) ; for (let v = 0; v <= ymax; v += step) yt.push(v); }
+    const xt = []; for (let y = Math.ceil(s.xr[0] / 10) * 10; y <= s.xr[1]; y += this.ser === "tr" ? 10 : 5) xt.push(y);
+    frameAxes(ctx, P, { xt, yt, fx: (v) => String(v), fy: (v) => (this.log ? "10" + String(Math.round(Math.log10(v))).split("").map((c) => "⁰¹²³⁴⁵⁶⁷⁸⁹"[c] ?? (c === "-" ? "⁻" : c)).join("") : v >= 1e9 ? nf(v / 1e9, 0) + " G" : v >= 1e6 ? nf(v / 1e6, 0) + " M" : nf(v, 0)), yl: s.unit });
+    clipTo(ctx, P, () => {
+      const xs = Array.from({ length: 121 }, (_, i) => s.xr[0] + i / 120 * (s.xr[1] - s.xr[0]));
+      poly(ctx, xs.map((x) => [P.X(x), P.Y(Math.pow(2, fitr.a + fitr.b * x))]), C.warm, 2);
+      const [x0, y0] = pts[0]; poly(ctx, xs.map((x) => [P.X(x), P.Y(y0 * Math.pow(2, (x - x0) / this.T2))]), C.accent, 2, [6, 5]);
+    });
+    pts.forEach(([x, y, lab]) => { dot(ctx, P.X(x), P.Y(y), 5.5, C.hl, C.ink, 1.8); if (lab) text(ctx, lab, P.X(x) - 8, P.Y(y) - 12, { font: HAND(13), color: C.ink, align: "right" }); });
+    text(ctx, "ajustement", P.x0 + 6, P.y0 + 12, { font: HAND(13), color: C.warm, align: "left" });
+    text(ctx, "ton modèle", P.x0 + 6, P.y0 + 28, { font: HAND(13), color: C.accent, align: "left" });
+    const span = pts[pts.length - 1][0] - pts[0][0], fac = pts[pts.length - 1][1] / pts[0][1];
+    $("grT2v").textContent = nf(this.T2, 2) + " ans";
+    $("grFit").textContent = nf(1 / fitr.b, 2) + " ans";
+    $("grFac").textContent = "× " + this.fmtBig(fac) + ` en ${span} ans`;
+    $("grDbl").textContent = nf(Math.log2(fac), 1);
+    $("grSrc").textContent = s.src;
+  },
+};
+
+// ================= Routage & boucle =================
+if (location.protocol === "file:" || location.hostname.endsWith("github.io")) {
+  document.querySelectorAll(".atlas-link").forEach((a) => { a.href = "atlas.html"; a.removeAttribute("target"); });
+}
+const PLATES = { memoire: ME, entropie: EN, droite: DR, horloges: HC, croissance: GR };
+Object.values(PLATES).forEach((p) => p.init());
+let active = "memoire";
+function route() {
+  const h = location.hash.replace("#", ""); active = PLATES[h] ? h : "memoire";
+  for (const k in PLATES) $("p-" + k).hidden = k !== active;
+  document.querySelectorAll("[data-plate]").forEach((a) => { if (a.dataset.plate === active) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+}
+addEventListener("hashchange", route); route();
+let last = performance.now();
+function loop(now) { const dt = Math.min(0.05, (now - last) / 1000); last = now; try { PLATES[active].frame(reduced ? dt * 0.6 : dt); } catch (e) { console.error(e); } requestAnimationFrame(loop); }
+requestAnimationFrame(loop);
+</script>
